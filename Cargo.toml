@@ -1,0 +1,9 @@
+[package]
+name = "lasync"
+version = "0.1.0"
+description = "A single-threaded async executor"
+authors = ["Lance Hart <me@lancehart>"]
+edition = "2021"
+repository = "https://github.com/shipsimfan/lib-lasync.git"
+license = "GPL-3.0-or-later"
+publish = false
