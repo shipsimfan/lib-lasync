@@ -1,4 +1,4 @@
-use super::{FutureQueue, Task};
+use super::{FutureQueue, Task, WakerRef};
 use std::{
     sync::{
         mpsc::{sync_channel, Receiver},
@@ -25,7 +25,7 @@ impl LocalExecutor {
         while let Ok(task) = self.queue.recv() {
             let mut future_slot = task.future().lock().unwrap();
             if let Some(mut future) = future_slot.take() {
-                let waker = task.waker();
+                let waker = WakerRef::new(&task);
                 let context = &mut Context::from_waker(&waker);
 
                 if future.as_mut().poll(context).is_pending() {

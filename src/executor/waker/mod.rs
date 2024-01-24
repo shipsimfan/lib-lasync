@@ -1,4 +1,7 @@
-use std::{marker::PhantomData, mem::ManuallyDrop, ops::Deref, task::Waker};
+use super::task::Task;
+use std::{marker::PhantomData, mem::ManuallyDrop, ops::Deref, sync::Arc, task::Waker};
+
+mod vtable;
 
 /// A reference to a [`Waker`]
 pub(super) struct WakerRef<'a> {
@@ -9,9 +12,16 @@ pub(super) struct WakerRef<'a> {
     _lifetime: PhantomData<&'a ()>,
 }
 
+/// Creates a [`Waker`] for a [`Task`]
+fn create_waker(task: *const Task) -> Waker {
+    unsafe { Waker::from_raw(vtable::create_raw_waker(task)) }
+}
+
 impl<'a> WakerRef<'a> {
-    /// Creates a new [`WakerRef`] from `waker`
-    pub(super) fn new(waker: ManuallyDrop<Waker>) -> Self {
+    /// Creates a new [`WakerRef`] for a [`Task`]
+    pub(super) fn new(task: &'a Arc<Task>) -> Self {
+        let waker = ManuallyDrop::new(create_waker(Arc::as_ptr(task)));
+
         WakerRef {
             waker,
             _lifetime: PhantomData,
