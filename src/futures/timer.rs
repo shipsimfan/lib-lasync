@@ -1,47 +1,49 @@
+use linux::{
+    sys::timerfd::{timerfd_create, timerfd_settime, TFD_NONBLOCK},
+    time::{itimerspec, timespec, CLOCK_MONOTONIC},
+    try_linux,
+    unistd::close,
+};
 use std::{
+    ffi::c_int,
     future::Future,
     pin::Pin,
-    sync::{Arc, Mutex},
-    task::{Context, Poll, Waker},
-    thread,
+    ptr::null_mut,
+    task::{Context, Poll},
     time::Duration,
 };
 
 /// A future that signals after a certain duration
 pub struct Timer {
-    /// The shared state with the child thread
-    shared_state: Arc<Mutex<SharedState>>,
-}
+    /// The file descriptor for the timer
+    file_descriptor: c_int,
 
-/// The shared state between a timer future and its child thread
-struct SharedState {
-    /// Has the timer completed?
-    completed: bool,
-
-    /// Callback on timer completion
-    waker: Option<Waker>,
+    /// Has this timer been register with the event manager?
+    registered: bool,
 }
 
 impl Timer {
     /// Creates and starts a new [`Timer`] for `duration`
-    pub fn new(duration: Duration) -> Self {
-        let shared_state = Arc::new(Mutex::new(SharedState {
-            completed: false,
-            waker: None,
-        }));
+    pub fn new(duration: Duration) -> linux::Result<Self> {
+        let file_descriptor = try_linux!(timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK))?;
 
-        let thread_shared_state = shared_state.clone();
-        thread::spawn(move || {
-            thread::sleep(duration);
-            let mut shared_state = thread_shared_state.lock().unwrap();
+        try_linux!(timerfd_settime(
+            file_descriptor,
+            0,
+            &itimerspec {
+                interval: timespec { sec: 0, nsec: 0 },
+                value: timespec {
+                    sec: duration.as_secs() as _,
+                    nsec: duration.subsec_nanos() as _
+                }
+            },
+            null_mut()
+        ))?;
 
-            shared_state.completed = true;
-            if let Some(waker) = shared_state.waker.take() {
-                waker.wake()
-            }
-        });
-
-        Timer { shared_state }
+        Ok(Timer {
+            file_descriptor,
+            registered: false,
+        })
     }
 }
 
@@ -49,12 +51,25 @@ impl Future for Timer {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let mut shared_state = self.shared_state.lock().unwrap();
-        if shared_state.completed {
-            Poll::Ready(())
-        } else {
-            shared_state.waker = Some(cx.waker().clone());
-            Poll::Pending
+        // Check if the timer is expired using `timerfd_gettime`
+
+        // If it is expired,
+        //     Deregister the event
+        //     Return `Poll::Ready`
+
+        // Otherwise, (re)register the timer with the executor
+
+        todo!()
+    }
+}
+
+impl Drop for Timer {
+    fn drop(&mut self) {
+        if self.registered {
+            // Deregister the event
         }
+
+        // Close the descriptor
+        unsafe { close(self.file_descriptor) };
     }
 }

@@ -1,26 +1,32 @@
 use super::Task;
-use std::{
-    future::Future,
-    sync::{mpsc::SyncSender, Arc},
-};
+use std::{cell::RefCell, collections::VecDeque, future::Future, rc::Rc};
 
 /// A queue of [`Future`]s to complete
-#[derive(Clone)]
-pub struct FutureQueue(SyncSender<Arc<Task>>);
+pub struct FutureQueue<T>(Rc<RefCell<VecDeque<Rc<Task<T>>>>>);
 
-impl FutureQueue {
-    /// Creates a new [`FutureQueue`] from `sender`
-    pub(super) fn new(sender: SyncSender<Arc<Task>>) -> Self {
-        FutureQueue(sender)
+impl<T> FutureQueue<T> {
+    /// Creates a new empty [`FutureQueue`]
+    pub(super) fn new() -> Self {
+        FutureQueue(Rc::new(RefCell::new(VecDeque::new())))
     }
 
     /// Pushes `future` onto the back of the queue
-    pub fn push(&self, future: impl Future<Output = ()> + Send + 'static) {
-        let task = Arc::new(Task::new(future, self.clone()));
+    pub fn push(&self, future: impl Future<Output = T> + 'static) {
+        let task = Rc::new(Task::new(future, self.clone()));
         self.push_raw(task);
     }
 
-    pub(super) fn push_raw(&self, task: Arc<Task>) {
-        self.0.send(task).unwrap();
+    pub(super) fn push_raw(&self, task: Rc<Task<T>>) {
+        self.0.borrow_mut().push_back(task);
+    }
+
+    pub(super) fn pop(&self) -> Option<Rc<Task<T>>> {
+        self.0.borrow_mut().pop_front()
+    }
+}
+
+impl<T> Clone for FutureQueue<T> {
+    fn clone(&self) -> Self {
+        FutureQueue(self.0.clone())
     }
 }

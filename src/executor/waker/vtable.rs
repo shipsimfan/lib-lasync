@@ -1,46 +1,52 @@
 use crate::executor::Task;
 use std::{
     mem::ManuallyDrop,
-    sync::Arc,
+    rc::Rc,
     task::{RawWaker, RawWakerVTable},
 };
 
-/// The [`RawWakerVTable`] for [`Task`]s
-const RAW_WAKER_VTABLE: RawWakerVTable =
-    RawWakerVTable::new(clone_raw, wake_raw, wake_by_ref_raw, drop_raw);
-
 /// Creates a [`RawWaker`] for a [`Task`]
-pub(super) fn create_raw_waker(task: *const Task) -> RawWaker {
-    RawWaker::new(task as _, &RAW_WAKER_VTABLE)
+pub(super) fn create_raw_waker<T>(task: *const Task<T>) -> RawWaker {
+    RawWaker::new(task as _, raw_waker_vtable::<T>())
 }
 
-/// Clones an [`Arc<Task>`] using its pointer.
+/// The [`RawWakerVTable`] for [`Task`]s
+const fn raw_waker_vtable<T>() -> &'static RawWakerVTable {
+    &RawWakerVTable::new(
+        clone_raw::<T>,
+        wake_raw::<T>,
+        wake_by_ref_raw::<T>,
+        drop_raw::<T>,
+    )
+}
+
+/// Clones an [`Rc<Task>`] using its pointer.
 ///
-/// `data` should have been created from either [`Arc::into_raw`] or [`Arc::as_ptr`]
-unsafe fn clone_raw(data: *const ()) -> RawWaker {
-    // Convert `data` into an `Arc<Task>`, manually drop to avoid decreasing the ref count
-    let arc = ManuallyDrop::new(Arc::<Task>::from_raw(data as _));
+/// `data` should have been created from either [`Rc::into_raw`] or [`Rc::as_ptr`]
+unsafe fn clone_raw<T>(data: *const ()) -> RawWaker {
+    // Convert `data` into an `Rc<Task>`, manually drop to avoid decreasing the ref count
+    let rc = ManuallyDrop::new(Rc::<Task<T>>::from_raw(data as _));
 
     // Clone it to increase the ref count
-    let _clone: ManuallyDrop<_> = arc.clone();
+    let _clone: ManuallyDrop<_> = rc.clone();
 
     // Return the waker
-    create_raw_waker(data as _)
+    create_raw_waker::<T>(data as _)
 }
 
-/// Calls `wake` on a [`Arc<Task>`] and consumes it
-unsafe fn wake_raw(data: *const ()) {
-    let arc = unsafe { Arc::<Task>::from_raw(data as _) };
-    arc.wake()
+/// Calls `wake` on a [`Rc<Task>`] and consumes it
+unsafe fn wake_raw<T>(data: *const ()) {
+    let rc = unsafe { Rc::<Task<T>>::from_raw(data as _) };
+    rc.wake()
 }
 
-/// Calls `wake` on a [`Arc<Task>`] without consuming it
-unsafe fn wake_by_ref_raw(data: *const ()) {
-    let arc = ManuallyDrop::new(unsafe { Arc::<Task>::from_raw(data as _) });
-    arc.wake()
+/// Calls `wake` on a [`Rc<Task>`] without consuming it
+unsafe fn wake_by_ref_raw<T>(data: *const ()) {
+    let rc = ManuallyDrop::new(unsafe { Rc::<Task<T>>::from_raw(data as _) });
+    rc.wake()
 }
 
-/// Drops an [`Arc<Task>`]
-unsafe fn drop_raw(data: *const ()) {
-    drop(unsafe { Arc::<Task>::from_raw(data as _) })
+/// Drops an [`Rc<Task>`]
+unsafe fn drop_raw<T>(data: *const ()) {
+    drop(unsafe { Rc::<Task<T>>::from_raw(data as _) })
 }

@@ -7,3 +7,6 @@ edition = "2021"
 repository = "https://github.com/shipsimfan/lib-lasync.git"
 license = "GPL-3.0-or-later"
 publish = false
+
+[dependencies]
+linux.git = "https://github.com/shipsimfan/lib-linux"

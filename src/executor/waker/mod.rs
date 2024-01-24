@@ -1,26 +1,26 @@
 use super::task::Task;
-use std::{marker::PhantomData, mem::ManuallyDrop, ops::Deref, sync::Arc, task::Waker};
+use std::{marker::PhantomData, mem::ManuallyDrop, ops::Deref, rc::Rc, task::Waker};
 
 mod vtable;
 
 /// A reference to a [`Waker`]
-pub(super) struct WakerRef<'a> {
+pub(super) struct WakerRef<'a, T> {
     /// The [`Waker`] which this is "referencing"
     waker: ManuallyDrop<Waker>,
 
     /// A marker for the lifetime
-    _lifetime: PhantomData<&'a ()>,
+    _lifetime: PhantomData<&'a T>,
 }
 
 /// Creates a [`Waker`] for a [`Task`]
-fn create_waker(task: *const Task) -> Waker {
+fn create_waker<T>(task: *const Task<T>) -> Waker {
     unsafe { Waker::from_raw(vtable::create_raw_waker(task)) }
 }
 
-impl<'a> WakerRef<'a> {
+impl<'a, T> WakerRef<'a, T> {
     /// Creates a new [`WakerRef`] for a [`Task`]
-    pub(super) fn new(task: &'a Arc<Task>) -> Self {
-        let waker = ManuallyDrop::new(create_waker(Arc::as_ptr(task)));
+    pub(super) fn new(task: &'a Rc<Task<T>>) -> Self {
+        let waker = ManuallyDrop::new(create_waker(Rc::as_ptr(task)));
 
         WakerRef {
             waker,
@@ -29,7 +29,7 @@ impl<'a> WakerRef<'a> {
     }
 }
 
-impl<'a> Deref for WakerRef<'a> {
+impl<'a, T> Deref for WakerRef<'a, T> {
     type Target = Waker;
 
     fn deref(&self) -> &Self::Target {

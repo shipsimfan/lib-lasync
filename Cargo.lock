@@ -5,3 +5,11 @@ version = 3
 [[package]]
 name = "lasync"
 version = "0.1.0"
+dependencies = [
+ "linux",
+]
+
+[[package]]
+name = "linux"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-linux#db84715109ceec768ec624deef1325d33f591c10"
