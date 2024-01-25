@@ -50,7 +50,9 @@ impl EventManager {
     pub fn unregister(file_descriptor: c_int) -> linux::Result<()> {
         LOCAL_EVENT_MANAGER.with(|local_event_manager| {
             match &mut *local_event_manager.borrow_mut() {
-                Some(local_event_manager) => local_event_manager.unregister(file_descriptor),
+                Some(local_event_manager) => {
+                    local_event_manager.unregister(file_descriptor).map(|_| ())
+                }
                 None => panic!("Cannot unregister an event without a local executor running"),
             }
         })
@@ -66,9 +68,11 @@ impl EventManager {
 
     /// Blocks until an event becomes ready and wakes the ready events
     pub(super) fn poll(&self) -> linux::Result<()> {
-        LOCAL_EVENT_MANAGER.with(|local_event_manager| match &*local_event_manager.borrow() {
-            Some(local_event_manager) => local_event_manager.poll(),
-            None => unreachable!(),
+        LOCAL_EVENT_MANAGER.with(|local_event_manager| {
+            match &mut *local_event_manager.borrow_mut() {
+                Some(local_event_manager) => local_event_manager.poll(),
+                None => unreachable!(),
+            }
         })
     }
 }

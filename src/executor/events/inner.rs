@@ -1,8 +1,8 @@
 use super::Event;
 use linux::{
     sys::epoll::{
-        epoll_create, epoll_ctl, epoll_data_t, epoll_event, EPOLL_CTL_ADD, EPOLL_CTL_DEL,
-        EPOLL_CTL_MOD,
+        epoll_create, epoll_ctl, epoll_data_t, epoll_event, epoll_wait, EPOLL_CTL_ADD,
+        EPOLL_CTL_DEL, EPOLL_CTL_MOD,
     },
     try_linux,
     unistd::close,
@@ -33,8 +33,17 @@ impl EventManagerInner {
     }
 
     /// Blocks until an event becomes ready and wakes the ready events
-    pub(super) fn poll(&self) -> linux::Result<()> {
-        todo!()
+    pub(super) fn poll(&mut self) -> linux::Result<()> {
+        let mut event = epoll_event {
+            events: 0,
+            data: epoll_data_t { fd: 0 },
+        };
+
+        try_linux!(epoll_wait(self.epoll, &mut event, 1, -1))?;
+
+        self.unregister(unsafe { event.data.fd })?.wake();
+
+        Ok(())
     }
 
     /// (Re)registers an event to be polled
@@ -69,7 +78,7 @@ impl EventManagerInner {
     }
 
     /// Stops polling for an event
-    pub(super) fn unregister(&mut self, file_descriptor: c_int) -> linux::Result<()> {
+    pub(super) fn unregister(&mut self, file_descriptor: c_int) -> linux::Result<Event> {
         try_linux!(epoll_ctl(
             self.epoll,
             EPOLL_CTL_DEL,
@@ -77,9 +86,7 @@ impl EventManagerInner {
             null()
         ))?;
 
-        self.remove_event(file_descriptor);
-
-        Ok(())
+        Ok(self.remove_event(file_descriptor).unwrap())
     }
 
     /// Gets an [`Event`] using its file_descriptor
@@ -94,13 +101,14 @@ impl EventManagerInner {
     }
 
     /// Removes an [`Event`] using its file descriptor
-    fn remove_event(&mut self, file_descriptor: c_int) {
+    fn remove_event(&mut self, file_descriptor: c_int) -> Option<Event> {
         for i in 0..self.events.len() {
             if self.events[i].file_descriptor() == file_descriptor {
-                self.events.swap_remove(i);
-                return;
+                return Some(self.events.swap_remove(i));
             }
         }
+
+        None
     }
 }
 

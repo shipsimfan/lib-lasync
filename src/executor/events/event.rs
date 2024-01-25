@@ -27,4 +27,9 @@ impl Event {
     pub(super) fn set_waker(&mut self, waker: Waker) {
         self.waker = waker;
     }
+
+    /// Wakes up the task for this event
+    pub(super) fn wake(self) {
+        self.waker.wake()
+    }
 }
