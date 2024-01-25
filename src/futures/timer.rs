@@ -13,6 +13,8 @@ use std::{
     time::Duration,
 };
 
+use crate::executor::EventManager;
+
 /// A future that signals after a certain duration
 pub struct Timer {
     /// The file descriptor for the timer
@@ -51,7 +53,7 @@ impl Future for Timer {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        // Check if the timer is expired using `timerfd_gettime`
+        // Check if the timer is expired using `read`
 
         // If it is expired,
         //     Deregister the event
@@ -66,7 +68,7 @@ impl Future for Timer {
 impl Drop for Timer {
     fn drop(&mut self) {
         if self.registered {
-            // Deregister the event
+            EventManager::unregister(self.file_descriptor).ok();
         }
 
         // Close the descriptor

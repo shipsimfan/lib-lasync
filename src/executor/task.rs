@@ -2,19 +2,19 @@ use super::FutureQueue;
 use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 /// A [`Future`] which can re-schedule itself
-pub(super) struct Task<T> {
+pub(super) struct Task {
     /// The [`Future`] to be driven to completion
-    future: RefCell<Option<Pin<Box<dyn Future<Output = T>>>>>,
+    future: RefCell<Option<Pin<Box<dyn Future<Output = ()>>>>>,
 
     /// The queue to re-schedule the future on
-    future_queue: FutureQueue<T>,
+    future_queue: FutureQueue,
 }
 
-impl<T> Task<T> {
+impl Task {
     /// Creates a new [`Task`] for `future`
     pub(super) fn new(
-        future: impl Future<Output = T> + 'static,
-        future_queue: FutureQueue<T>,
+        future: impl Future<Output = ()> + 'static,
+        future_queue: FutureQueue,
     ) -> Self {
         Task {
             future: RefCell::new(Some(Box::pin(future))),
@@ -22,7 +22,7 @@ impl<T> Task<T> {
         }
     }
 
-    pub(super) fn future(&self) -> &RefCell<Option<Pin<Box<dyn Future<Output = T>>>>> {
+    pub(super) fn future(&self) -> &RefCell<Option<Pin<Box<dyn Future<Output = ()>>>>> {
         &self.future
     }
 

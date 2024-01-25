@@ -4,22 +4,22 @@ use std::{marker::PhantomData, mem::ManuallyDrop, ops::Deref, rc::Rc, task::Wake
 mod vtable;
 
 /// A reference to a [`Waker`]
-pub(super) struct WakerRef<'a, T> {
+pub(super) struct WakerRef<'a> {
     /// The [`Waker`] which this is "referencing"
     waker: ManuallyDrop<Waker>,
 
     /// A marker for the lifetime
-    _lifetime: PhantomData<&'a T>,
+    _lifetime: PhantomData<&'a ()>,
 }
 
 /// Creates a [`Waker`] for a [`Task`]
-fn create_waker<T>(task: *const Task<T>) -> Waker {
+fn create_waker(task: *const Task) -> Waker {
     unsafe { Waker::from_raw(vtable::create_raw_waker(task)) }
 }
 
-impl<'a, T> WakerRef<'a, T> {
+impl<'a> WakerRef<'a> {
     /// Creates a new [`WakerRef`] for a [`Task`]
-    pub(super) fn new(task: &'a Rc<Task<T>>) -> Self {
+    pub(super) fn new(task: &'a Rc<Task>) -> Self {
         let waker = ManuallyDrop::new(create_waker(Rc::as_ptr(task)));
 
         WakerRef {
@@ -29,7 +29,7 @@ impl<'a, T> WakerRef<'a, T> {
     }
 }
 
-impl<'a, T> Deref for WakerRef<'a, T> {
+impl<'a> Deref for WakerRef<'a> {
     type Target = Waker;
 
     fn deref(&self) -> &Self::Target {

@@ -1,6 +1,5 @@
 //! Single-threaded executor for async/await
 
-use events::EventManager;
 use std::{future::Future, task::Context};
 use task::Task;
 use waker::WakerRef;
@@ -10,23 +9,23 @@ mod future_queue;
 mod task;
 mod waker;
 
+pub use events::EventManager;
 pub use future_queue::FutureQueue;
 
 /// Runs a local executor on `future`
-pub fn run(future: impl Future + 'static) -> ! {
+pub fn run(future: impl Future<Output = ()> + 'static) -> linux::Result<()> {
     let queue = FutureQueue::new();
     queue.push(future);
     run_queue(queue)
 }
 
 /// Executes the tasks in the [`FutureQueue`]
-pub fn run_queue<T>(queue: FutureQueue<T>) -> ! {
-    let event_manager = EventManager::new();
+pub fn run_queue(queue: FutureQueue) -> linux::Result<()> {
+    let event_manager = EventManager::new()?;
 
     loop {
-        // TODO: Poll event manager
-
-        if let Some(task) = queue.pop() {
+        // Drive any tasks that need to be
+        while let Some(task) = queue.pop() {
             let mut future_slot = task.future().borrow_mut();
             if let Some(mut future) = future_slot.take() {
                 let waker = WakerRef::new(&task);
@@ -36,6 +35,17 @@ pub fn run_queue<T>(queue: FutureQueue<T>) -> ! {
                     *future_slot = Some(future);
                 }
             }
+        }
+
+        // Wait for events as there are no more tasks to perform
+        event_manager.poll()?;
+
+        // If there are no events being waited on and no tasks to process, there is nothing
+        // remaining to drive forward and we are done
+        let no_events = event_manager.count() == 0;
+        let no_tasks = queue.len() == 0;
+        if no_events && no_tasks {
+            return Ok(());
         }
     }
 }

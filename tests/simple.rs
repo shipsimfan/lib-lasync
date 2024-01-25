@@ -7,5 +7,6 @@ fn simple() {
         println!("Hello");
         Timer::new(Duration::from_secs(1)).unwrap().await;
         println!("World!");
-    });
+    })
+    .unwrap();
 }
