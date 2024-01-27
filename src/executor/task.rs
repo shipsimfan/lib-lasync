@@ -22,10 +22,12 @@ impl Task {
         }
     }
 
+    /// Gets the underyling [`Future`]
     pub(super) fn future(&self) -> &RefCell<Option<Pin<Box<dyn Future<Output = ()>>>>> {
         &self.future
     }
 
+    /// Queues this [`Task`]'s [`Future`] to be polled by the executor
     pub(super) fn wake(self: &Rc<Self>) {
         let cloned = self.clone();
         self.future_queue.push_raw(cloned);

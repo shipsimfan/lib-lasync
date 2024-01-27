@@ -22,10 +22,12 @@ impl FutureQueue {
         self.0.borrow().len()
     }
 
+    /// Push a an already formed [`Task`] onto the queue
     pub(super) fn push_raw(&self, task: Rc<Task>) {
         self.0.borrow_mut().push_back(task);
     }
 
+    /// Remove the next [`Task`] from the queue
     pub(super) fn pop(&self) -> Option<Rc<Task>> {
         self.0.borrow_mut().pop_front()
     }

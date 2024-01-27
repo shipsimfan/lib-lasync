@@ -5,13 +5,14 @@ use std::{cell::RefCell, ffi::c_int, task::Waker};
 mod event;
 mod inner;
 
-/// An event manager on one thread
+/// An manager which tracks the active events needing to be polled
 pub struct EventManager {
     /// Prevents the struct from being created elsewhere
     _priv: (),
 }
 
 thread_local! {
+    /// The current thread's [`EventManager`]
     static LOCAL_EVENT_MANAGER: RefCell<Option<EventManagerInner>> = RefCell::new(None);
 }
 
