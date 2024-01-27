@@ -17,7 +17,8 @@ impl FutureQueue {
         self.push_raw(task);
     }
 
-    pub(super) fn len(&self) -> usize {
+    /// Gets the number of tasks in the queue
+    pub fn len(&self) -> usize {
         self.0.borrow().len()
     }
 
