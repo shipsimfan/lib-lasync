@@ -7,7 +7,7 @@ pub struct FutureQueue(Rc<RefCell<VecDeque<Rc<Task>>>>);
 
 impl FutureQueue {
     /// Creates a new empty [`FutureQueue`]
-    pub(super) fn new() -> Self {
+    pub fn new() -> Self {
         FutureQueue(Rc::new(RefCell::new(VecDeque::new())))
     }
 
