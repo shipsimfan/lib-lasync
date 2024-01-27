@@ -37,9 +37,6 @@ pub fn run_queue(queue: FutureQueue) -> linux::Result<()> {
             }
         }
 
-        // Wait for events as there are no more tasks to perform
-        event_manager.poll()?;
-
         // If there are no events being waited on and no tasks to process, there is nothing
         // remaining to drive forward and we are done
         let no_events = event_manager.count() == 0;
@@ -47,5 +44,8 @@ pub fn run_queue(queue: FutureQueue) -> linux::Result<()> {
         if no_events && no_tasks {
             return Ok(());
         }
+
+        // Wait for events as there are no more tasks to perform
+        event_manager.poll()?;
     }
 }
