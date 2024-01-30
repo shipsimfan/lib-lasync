@@ -2,7 +2,7 @@ use std::time::Duration;
 
 #[test]
 fn one_timer() {
-    lasync::executor::run(async {
+    lasync::executor::run(32, async {
         println!("Hello");
 
         lasync::futures::Timer::new(Duration::from_secs(1))
@@ -44,5 +44,5 @@ fn two_timers() {
         println!("Task 2 - End");
     });
 
-    lasync::executor::run_queue(queue).unwrap();
+    lasync::executor::run_queue(32, queue).unwrap();
 }

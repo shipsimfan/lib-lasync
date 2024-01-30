@@ -1,6 +1,6 @@
 //! Single-threaded executor for async/await
 
-use std::{future::Future, task::Context};
+use std::{ffi::c_int, future::Future, task::Context};
 use task::Task;
 use waker::WakerRef;
 
@@ -13,15 +13,21 @@ pub use events::EventManager;
 pub use future_queue::FutureQueue;
 
 /// Runs a local executor on `future`
-pub fn run(future: impl Future<Output = ()> + 'static) -> linux::Result<()> {
+///
+/// # Panic
+/// This function will panic if `signal_number` is not between 32 and 64 inclusive
+pub fn run(signal_number: c_int, future: impl Future<Output = ()> + 'static) -> linux::Result<()> {
     let queue = FutureQueue::new();
     queue.push(future);
-    run_queue(queue)
+    run_queue(signal_number, queue)
 }
 
 /// Executes the tasks in the [`FutureQueue`]
-pub fn run_queue(queue: FutureQueue) -> linux::Result<()> {
-    let event_manager = EventManager::new()?;
+///
+/// # Panic
+/// This function will panic if `signal_number` is not between 32 and 64 inclusive
+pub fn run_queue(signal_number: c_int, queue: FutureQueue) -> linux::Result<()> {
+    let event_manager = EventManager::new(signal_number)?;
 
     loop {
         // Drive any tasks that need to be
@@ -39,13 +45,13 @@ pub fn run_queue(queue: FutureQueue) -> linux::Result<()> {
 
         // If there are no events being waited on and no tasks to process, there is nothing
         // remaining to drive forward and we are done
-        let no_events = event_manager.count() == 0;
+        let no_events = event_manager.len() == 0;
         let no_tasks = queue.len() == 0;
         if no_events && no_tasks {
             return Ok(());
         }
 
         // Wait for events as there are no more tasks to perform
-        event_manager.poll()?;
+        //event_manager.poll()?;
     }
 }
