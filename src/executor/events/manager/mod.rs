@@ -32,8 +32,8 @@ impl EventManager {
     }
 
     /// Blocks the current thread until an event triggers and wakes any triggered events
-    pub(in crate::executor) fn poll(&self) -> linux::Result<()> {
-        todo!("Poll for events")
+    pub(in crate::executor) fn poll(&self) {
+        tls::get_mut(|manager| manager.poll())
     }
 
     /// Registers a new event for the current thread and returns the event ID

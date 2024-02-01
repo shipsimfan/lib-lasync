@@ -46,6 +46,6 @@ pub fn run_queue(queue: FutureQueue) -> linux::Result<()> {
         }
 
         // Wait for events as there are no more tasks to perform
-        event_manager.poll()?;
+        event_manager.poll();
     }
 }
