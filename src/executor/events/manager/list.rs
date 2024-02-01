@@ -104,6 +104,7 @@ impl EventList {
             next_free: self.first_free,
         };
         self.first_free = Some(id.index());
+        self.len -= 1;
         true
     }
 

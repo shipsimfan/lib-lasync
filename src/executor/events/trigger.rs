@@ -20,6 +20,10 @@ impl EventTrigger {
     pub fn id(&self) -> EventID {
         self.id
     }
+
+    pub(super) fn trigger(&self) {
+        self.sender.send(self.id).unwrap();
+    }
 }
 
 impl Deref for EventTrigger {
