@@ -1,32 +1,35 @@
-use handler::SignalHandler;
-use std::{ffi::c_int, sync::Arc};
+use linux::{
+    signal::{sigaction, sigaction_handler, sigaction_t, SA_SIGINFO, SIGUSR1},
+    try_linux,
+};
+use std::{ffi::c_int, ptr::null_mut, sync::Once};
 
 mod handler;
-mod signals;
 mod value;
 
-/// A signal which can be used by async I/O events
-#[derive(Clone)]
-pub(super) struct Signal(Arc<SignalHandler>);
+pub use value::SignalValue;
 
-impl Signal {
-    /// Registers a signal handler on `signal_number`
-    ///
-    /// # Panic
-    /// This function will panic if `signal_number` is not between 32 and 64 inclusive
-    pub(super) fn register(signal_number: c_int) -> linux::Result<Self> {
-        signals::update(signal_number, Self::register_inner)
-    }
+/// Verifies the signal handler is only installed once
+static SIGNAL_HANDLER: Once = Once::new();
 
-    /// Sets `signal` to a new [`Signal`] if it is [`None`]. Returns the signal in the slot
-    fn register_inner(signal_number: c_int, signal: &mut Option<Signal>) -> linux::Result<Signal> {
-        match signal {
-            Some(signal) => Ok(signal.clone()),
-            None => {
-                let new_signal = Signal(Arc::new(SignalHandler::register(signal_number)?));
-                *signal = Some(new_signal.clone());
-                Ok(new_signal)
-            }
-        }
-    }
+pub(super) const SIGNAL_NUMBER: c_int = SIGUSR1;
+
+/// Registers the signal handler using [`sigaction`] into [`SIGNAL_NUMBER`]
+pub(super) fn register() -> linux::Result<()> {
+    let mut result = 0;
+    SIGNAL_HANDLER.call_once(|| result = do_register());
+    try_linux!(result).map(|_| ())
+}
+
+/// Actually registers the signal handler
+fn do_register() -> i32 {
+    let act = sigaction_t {
+        handler: sigaction_handler {
+            sigaction: Some(handler::signal_handler),
+        },
+        flags: SA_SIGINFO,
+        ..Default::default()
+    };
+
+    unsafe { sigaction(SIGNAL_NUMBER, &act, null_mut()) }
 }

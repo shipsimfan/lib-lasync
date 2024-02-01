@@ -1,22 +1,9 @@
-use std::ffi::c_int;
-
-/// A registered signal handler
-pub(super) struct SignalHandler(c_int);
+use linux::signal::siginfo_t;
+use std::ffi::{c_int, c_void};
 
 /// Handles signals for the event manager
-extern "C" fn signal_handler() {
-    todo!()
-}
+pub(super) extern "C" fn signal_handler(_: c_int, siginfo: *mut siginfo_t, _: *mut c_void) {
+    todo!("Convert `sigvalue` to `SignalValue`");
 
-impl SignalHandler {
-    /// Registers a signal handler using [`sigaction`]
-    pub(super) fn register(signal_number: c_int) -> linux::Result<Self> {
-        todo!("Register using `sigaction`")
-    }
-}
-
-impl Drop for SignalHandler {
-    fn drop(&mut self) {
-        todo!("Deregister the signal")
-    }
+    todo!("Trigger the `SignalValue`");
 }

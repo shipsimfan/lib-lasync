@@ -29,6 +29,7 @@ macro_rules! local_thread_functions {
 local_thread_functions![
     static manager_slot: &RefCell<Option<LocalEventManager>>;
 
+    /// Registers a [`LocalEventManager`] as the current thread's event manager
     pub(super) fn register(new_manager: LocalEventManager) -> () {
         let mut slot = manager_slot.borrow_mut();
 
@@ -37,12 +38,26 @@ local_thread_functions![
         *slot = Some(new_manager);
     }
 
+    /// Unregisters the current thread's event manager
     pub(super) fn unregister() -> () {
         *manager_slot.borrow_mut() = None;
     }
-
-    pub(super) fn len() -> usize {
-        let manager = manager_slot.borrow();
-        manager.as_ref().unwrap().len()
-    }
 ];
+
+/// Gets the current thread's local event manager
+pub(super) fn get<T, F: FnOnce(&LocalEventManager) -> T>(f: F) -> T {
+    LOCAL_EVENT_MANAGER.with(|manager| {
+        let manager = manager.borrow();
+        let manager = manager.as_ref().unwrap();
+        f(manager)
+    })
+}
+
+/// Gets the current thread's local event manager mutably
+pub(super) fn get_mut<T, F: FnOnce(&mut LocalEventManager) -> T>(f: F) -> T {
+    LOCAL_EVENT_MANAGER.with(|manager| {
+        let mut manager = manager.borrow_mut();
+        let manager = manager.as_mut().unwrap();
+        f(manager)
+    })
+}

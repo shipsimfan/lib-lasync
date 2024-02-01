@@ -1,6 +1,6 @@
 //! Single-threaded executor for async/await
 
-use std::{ffi::c_int, future::Future, task::Context};
+use std::{future::Future, task::Context};
 use task::Task;
 use waker::WakerRef;
 
@@ -9,25 +9,19 @@ mod future_queue;
 mod task;
 mod waker;
 
-pub use events::EventManager;
+pub use events::{EventManager, SignalValue};
 pub use future_queue::FutureQueue;
 
 /// Runs a local executor on `future`
-///
-/// # Panic
-/// This function will panic if `signal_number` is not between 32 and 64 inclusive
-pub fn run(signal_number: c_int, future: impl Future<Output = ()> + 'static) -> linux::Result<()> {
+pub fn run(future: impl Future<Output = ()> + 'static) -> linux::Result<()> {
     let queue = FutureQueue::new();
     queue.push(future);
-    run_queue(signal_number, queue)
+    run_queue(queue)
 }
 
 /// Executes the tasks in the [`FutureQueue`]
-///
-/// # Panic
-/// This function will panic if `signal_number` is not between 32 and 64 inclusive
-pub fn run_queue(signal_number: c_int, queue: FutureQueue) -> linux::Result<()> {
-    let event_manager = EventManager::new(signal_number)?;
+pub fn run_queue(queue: FutureQueue) -> linux::Result<()> {
+    let event_manager = EventManager::new()?;
 
     loop {
         // Drive any tasks that need to be
