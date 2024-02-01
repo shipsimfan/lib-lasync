@@ -31,6 +31,11 @@ impl EventManager {
         tls::get(|manager| manager.len())
     }
 
+    /// Blocks the current thread until an event triggers and wakes any triggered events
+    pub(in crate::executor) fn poll(&self) -> linux::Result<()> {
+        todo!("Poll for events")
+    }
+
     /// Registers a new event for the current thread and returns the event ID
     pub fn register() -> usize {
         tls::get_mut(|manager| manager.register())
