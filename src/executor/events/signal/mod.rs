@@ -5,9 +5,6 @@ use linux::{
 use std::{ffi::c_int, ptr::null_mut, sync::Once};
 
 mod handler;
-mod value;
-
-pub use value::SignalValue;
 
 /// Verifies the signal handler is only installed once
 static SIGNAL_HANDLER: Once = Once::new();

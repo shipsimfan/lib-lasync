@@ -1,4 +1,4 @@
-use super::{signal, SignalValue, SIGNAL_NUMBER};
+use super::{signal, EventID, EventTrigger, SIGNAL_NUMBER};
 use linux::signal::{sigevent, sigval, SIGEV_SIGNAL};
 use list::EventList;
 use local::LocalEventManager;
@@ -37,7 +37,7 @@ impl EventManager {
     }
 
     /// Registers a new event for the current thread and returns the event ID
-    pub fn register() -> usize {
+    pub fn register() -> EventID {
         tls::get_mut(|manager| manager.register())
     }
 
@@ -46,9 +46,9 @@ impl EventManager {
     ///
     /// The [`sigevent`] object points to the [`SignalValue`] so the [`SignalValue`] must live
     /// as long as the event is registered
-    pub fn register_signal() -> (Pin<Box<SignalValue>>, sigevent) {
+    pub fn register_signal() -> (Pin<Box<EventTrigger>>, sigevent) {
         let (id, sender) = tls::get_mut(|manager| (manager.register(), manager.sender()));
-        let signal_value = SignalValue::new(id, sender);
+        let signal_value = EventTrigger::new(id, sender);
 
         let sigevent = sigevent {
             notify: SIGEV_SIGNAL,
@@ -63,12 +63,15 @@ impl EventManager {
     }
 
     /// Sets the [`Waker`] called when `event` is triggered
-    pub fn set_waker(event: usize, waker: Waker) {
+    ///
+    /// # Panic
+    /// This function will panic if `event` is not registered
+    pub fn set_waker(event: EventID, waker: Waker) {
         tls::get_mut(|manager| manager.update(event, Some(waker)));
     }
 
     /// Unregisters an event for the current thread
-    pub fn unregister(event: usize) {
+    pub fn unregister(event: EventID) {
         tls::get_mut(|manager| manager.unregister(event))
     }
 }

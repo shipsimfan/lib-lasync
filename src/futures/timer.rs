@@ -1,4 +1,4 @@
-use crate::executor::{EventManager, SignalValue};
+use crate::executor::{EventManager, EventTrigger};
 use linux::{
     time::{
         itimerspec, timer_create, timer_delete, timer_gettime, timer_settime, timer_t, timespec,
@@ -15,7 +15,7 @@ use std::{
 
 /// A future that signals after a certain duration
 pub struct Timer {
-    id: Pin<Box<SignalValue>>,
+    id: Pin<Box<EventTrigger>>,
 
     timer: timer_t,
 }
