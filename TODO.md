@@ -13,8 +13,11 @@
      2. Add creation and deletion code
      3. Add registration and unregistration code
      4. Add polling code
-   5. Add `AtomicUsize` reference count for process signal blocking
-   6. Add a `signalfd` to `LocalEventManager`
+   5. Add a `signalfd` to `LocalEventManager`
+     1. Add to struct
+     2. Add creation code, let user choose signal number
+     3. Add deletion code
+     4. Add poll code
  2. Add I/O options
    1. TCP Listener
    2. TCP Stream
