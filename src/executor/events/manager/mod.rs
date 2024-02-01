@@ -2,7 +2,7 @@ use super::{signal, SignalValue, SIGNAL_NUMBER};
 use linux::signal::{sigevent, sigval, SIGEV_SIGNAL};
 use list::EventList;
 use local::LocalEventManager;
-use std::pin::Pin;
+use std::{pin::Pin, task::Waker};
 
 mod list;
 mod local;
@@ -55,6 +55,11 @@ impl EventManager {
         };
 
         (signal_value, sigevent)
+    }
+
+    /// Sets the [`Waker`] called when `event` is triggered
+    pub fn set_waker(event: usize, waker: Waker) {
+        tls::get_mut(|manager| manager.update(event, Some(waker)));
     }
 
     /// Unregisters an event for the current thread

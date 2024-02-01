@@ -1,5 +1,8 @@
 use super::EventList;
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::{
+    sync::mpsc::{self, Receiver, Sender},
+    task::Waker,
+};
 
 /// The event manager for an executor on one thread
 pub(super) struct LocalEventManager {
@@ -38,6 +41,11 @@ impl LocalEventManager {
     /// Registers a new event returning its id
     pub(super) fn register(&mut self) -> usize {
         self.events.insert()
+    }
+
+    /// Sets the [`Waker`] associated with `event`
+    pub(super) fn update(&mut self, event: usize, waker: Option<Waker>) {
+        *self.events.get_mut(event) = waker;
     }
 
     /// Unregisters an event
