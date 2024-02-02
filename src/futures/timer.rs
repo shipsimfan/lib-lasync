@@ -1,4 +1,4 @@
-use crate::executor::{EventManager, EventTrigger};
+use crate::executor::{EventID, EventManager};
 use linux::{
     time::{
         itimerspec, timer_create, timer_delete, timer_gettime, timer_settime, timer_t, timespec,
@@ -15,7 +15,7 @@ use std::{
 
 /// A future that signals after a certain duration
 pub struct Timer {
-    id: Pin<Box<EventTrigger>>,
+    id: Pin<Box<EventID>>,
 
     timer: timer_t,
 }
@@ -58,7 +58,7 @@ impl Future for Timer {
         }
 
         // Register the waker if the timer isn't expired
-        EventManager::set_waker(self.id.id(), cx.waker().clone());
+        EventManager::set_waker(*self.id, cx.waker().clone());
         Poll::Pending
     }
 }
@@ -69,6 +69,6 @@ impl Drop for Timer {
         unsafe { timer_delete(self.timer) };
 
         // Unregister the event
-        EventManager::unregister(self.id.id())
+        EventManager::unregister(*self.id)
     }
 }

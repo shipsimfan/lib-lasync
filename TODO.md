@@ -1,19 +1,15 @@
 # ToDo
  1. Switch to using `signalfd` and `epoll`
-   1. Remove the mpsc channel
-   2. Remove the signal handler
-     1. Remove the function
-     2. Remove the registration
-   3. Add file descriptor to event
+   1. Add file descriptor to event
      1. Add to `Node::Used`
      2. Add `insert_fd()`
      3. Return `Option<fd>` from `remove()`
-   4. Add `epoll` to `LocalEventManager`
+   2. Add `epoll` to `LocalEventManager`
      1. Add to struct
      2. Add creation and deletion code
      3. Add registration and unregistration code
      4. Add polling code
-   5. Add a `signalfd` to `LocalEventManager`
+   3. Add a `signalfd` to `LocalEventManager`
      1. Add to struct
      2. Add creation code, let user choose signal number
      3. Add deletion code

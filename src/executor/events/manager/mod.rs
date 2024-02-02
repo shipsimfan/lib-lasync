@@ -1,4 +1,4 @@
-use super::{signal, EventID, EventTrigger, SIGNAL_NUMBER};
+use super::EventID;
 use linux::signal::{sigevent, sigval, SIGEV_SIGNAL};
 use list::EventList;
 use local::LocalEventManager;
@@ -17,8 +17,6 @@ pub struct EventManager {
 impl EventManager {
     /// Creates a new [`EventManager`] for the current thread
     pub(in crate::executor) fn new() -> linux::Result<Self> {
-        signal::register()?;
-
         let local_event_manager = LocalEventManager::new();
 
         tls::register(local_event_manager);
@@ -46,20 +44,19 @@ impl EventManager {
     ///
     /// The [`sigevent`] object points to the [`SignalValue`] so the [`SignalValue`] must live
     /// as long as the event is registered
-    pub fn register_signal() -> (Pin<Box<EventTrigger>>, sigevent) {
-        let (id, sender) = tls::get_mut(|manager| (manager.register(), manager.sender()));
-        let signal_value = EventTrigger::new(id, sender);
+    pub fn register_signal() -> (Pin<Box<EventID>>, sigevent) {
+        let id = Box::pin(tls::get_mut(|manager| manager.register()));
 
         let sigevent = sigevent {
             notify: SIGEV_SIGNAL,
-            signo: SIGNAL_NUMBER,
+            signo: todo!("Signal number"),
             value: sigval {
-                ptr: &*signal_value as *const _ as _,
+                ptr: &*id as *const _ as _,
             },
             ..Default::default()
         };
 
-        (signal_value, sigevent)
+        (id, sigevent)
     }
 
     /// Sets the [`Waker`] called when `event` is triggered

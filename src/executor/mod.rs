@@ -9,7 +9,7 @@ mod future_queue;
 mod task;
 mod waker;
 
-pub use events::{EventID, EventManager, EventTrigger};
+pub use events::{EventID, EventManager};
 pub use future_queue::FutureQueue;
 
 /// Runs a local executor on `future`
