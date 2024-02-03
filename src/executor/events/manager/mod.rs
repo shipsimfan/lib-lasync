@@ -1,9 +1,11 @@
 use super::EventID;
+use event::Event;
 use linux::signal::{sigevent, sigval, SIGEV_SIGNAL};
 use list::EventList;
 use local::LocalEventManager;
-use std::{pin::Pin, task::Waker};
+use std::{ffi::c_int, pin::Pin, task::Waker};
 
+mod event;
 mod list;
 mod local;
 mod tls;
@@ -39,20 +41,27 @@ impl EventManager {
         tls::get_mut(|manager| manager.register())
     }
 
-    /// Registers a new event for the current thread and returns the event ID (inside the
-    /// [`SignalValue`]) and a [`sigevent`] object for registering the signal callback.
-    ///
-    /// The [`sigevent`] object points to the [`SignalValue`] so the [`SignalValue`] must live
-    /// as long as the event is registered
-    pub fn register_signal() -> (Pin<Box<EventID>>, sigevent) {
-        let id = Box::pin(tls::get_mut(|manager| manager.register()));
+    /// Registers a new event for the current thread and registers a file descriptor for
+    /// monitoring. This function returns the [`EventID`] for the new event.
+    pub fn register_fd(fd: c_int) -> EventID {
+        tls::get_mut(|manager| {
+            let id = manager.register();
+            manager.set_fd(id, Some(fd));
+            id
+        })
+    }
+
+    /// Registers a new event for the current thread and returns the [`EventID`] and a [`sigevent`]
+    /// object for registering the signal callback.
+    pub fn register_signal() -> (EventID, sigevent) {
+        let id = Self::register();
 
         let sigevent = sigevent {
             notify: SIGEV_SIGNAL,
-            signo: todo!("Signal number"),
             value: sigval {
-                ptr: &*id as *const _ as _,
+                ptr: id.as_u64() as _,
             },
+            signo: todo!("Signal number"),
             ..Default::default()
         };
 
@@ -64,7 +73,7 @@ impl EventManager {
     /// # Panic
     /// This function will panic if `event` is not registered
     pub fn set_waker(event: EventID, waker: Waker) {
-        tls::get_mut(|manager| manager.update(event, Some(waker)));
+        tls::get_mut(|manager| manager.set_waker(event, Some(waker)));
     }
 
     /// Unregisters an event for the current thread

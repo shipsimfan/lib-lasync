@@ -1,6 +1,6 @@
-use std::task::Waker;
-
+use super::Event;
 use crate::executor::EventID;
+use std::ops::{Index, IndexMut};
 
 /// A list of outstanding events
 pub(super) struct EventList {
@@ -29,8 +29,8 @@ enum Node {
         /// The key identifying this event
         key: usize,
 
-        /// The [`Waker`] used to enqueue the task
-        waker: Option<Waker>,
+        /// The [`Event`] itself
+        event: Event,
     },
 }
 
@@ -50,7 +50,23 @@ impl EventList {
     }
 
     /// Gets an event with `id`
-    pub(super) fn get_mut(&mut self, id: EventID) -> Option<&mut Option<Waker>> {
+    pub(super) fn get(&self, id: EventID) -> Option<&Event> {
+        let node = &self.list[id.index()];
+        if node.key() != id.key() {
+            return None;
+        }
+
+        match node {
+            Node::Free {
+                next_key: _,
+                next_free: _,
+            } => None,
+            Node::Used { key: _, event } => Some(event),
+        }
+    }
+
+    /// Gets an event with `id` mutably
+    pub(super) fn get_mut(&mut self, id: EventID) -> Option<&mut Event> {
         let node = &mut self.list[id.index()];
         if node.key() != id.key() {
             return None;
@@ -61,7 +77,7 @@ impl EventList {
                 next_key: _,
                 next_free: _,
             } => None,
-            Node::Used { key: _, waker } => Some(waker),
+            Node::Used { key: _, event } => Some(event),
         }
     }
 
@@ -78,43 +94,72 @@ impl EventList {
         self.first_free = self.list[index].next_free();
         let key = self.list[index].key();
 
-        self.list[index] = Node::Used { key, waker: None };
+        self.list[index] = Node::Used {
+            key,
+            event: Event::new(),
+        };
 
         EventID::new(index, key)
     }
 
     /// Removes an event from the list given its `id`
     ///
-    /// Returns if the item was removed from the list
-    pub(super) fn remove(&mut self, id: EventID) -> bool {
+    /// Returns the removed event
+    pub(super) fn remove(&mut self, id: EventID) -> Option<Event> {
         match self.list[id.index()] {
             Node::Free {
                 next_key: _,
                 next_free: _,
-            } => return false,
-            Node::Used { key, waker: _ } => {
+            } => return None,
+            Node::Used { key, event: _ } => {
                 if key != id.key() {
-                    return false;
+                    return None;
                 }
             }
         }
 
-        self.list[id.index()] = Node::Free {
+        let mut node = Node::Free {
             next_key: id.key() + 1,
             next_free: self.first_free,
         };
+        std::mem::swap(&mut node, &mut self.list[id.index()]);
+
         self.first_free = Some(id.index());
         self.len -= 1;
-        true
+
+        match node {
+            Node::Used { key: _, event } => Some(event),
+            Node::Free {
+                next_key: _,
+                next_free: _,
+            } => {
+                // Checked above in the first match
+                unreachable!()
+            }
+        }
     }
 
     /// Inserts an event at the end of `list`
     fn insert_at_end(&mut self) -> EventID {
         self.list.push(Node::Used {
             key: 0,
-            waker: None,
+            event: Event::new(),
         });
         EventID::new(self.list.len() - 1, 0)
+    }
+}
+
+impl Index<EventID> for EventList {
+    type Output = Event;
+
+    fn index(&self, index: EventID) -> &Self::Output {
+        self.get(index).unwrap()
+    }
+}
+
+impl IndexMut<EventID> for EventList {
+    fn index_mut(&mut self, index: EventID) -> &mut Self::Output {
+        self.get_mut(index).unwrap()
     }
 }
 
@@ -129,7 +174,7 @@ impl Node {
                 next_key: _,
                 next_free,
             } => *next_free,
-            Node::Used { key: _, waker: _ } => panic!("Attempting to get next_free of used node"),
+            Node::Used { key: _, event: _ } => panic!("Attempting to get next_free of used node"),
         }
     }
 
@@ -140,7 +185,7 @@ impl Node {
                 next_key,
                 next_free: _,
             } => *next_key,
-            Node::Used { key, waker: _ } => *key,
+            Node::Used { key, event: _ } => *key,
         }
     }
 }
