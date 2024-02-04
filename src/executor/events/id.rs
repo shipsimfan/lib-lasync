@@ -17,11 +17,11 @@ struct ID {
 
 impl EventID {
     /// Creates a new [`EventID`]
-    pub(super) fn new(index: usize, key: usize) -> Self {
+    pub(super) fn new(index: usize, key: u32) -> Self {
         EventID {
             id: ID {
                 index: index as u32,
-                key: key as u32,
+                key,
             },
         }
     }
@@ -37,8 +37,8 @@ impl EventID {
     }
 
     /// Gets the key this event was assigned
-    pub(super) fn key(&self) -> usize {
-        unsafe { self.id.key as usize }
+    pub(super) fn key(&self) -> u32 {
+        unsafe { self.id.key }
     }
 
     pub(super) fn as_u64(&self) -> u64 {

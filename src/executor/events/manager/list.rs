@@ -18,7 +18,7 @@ enum Node {
     /// The node is not registered
     Free {
         /// The key for the next event in this node
-        next_key: usize,
+        next_key: u32,
 
         /// The index of the next free node in `list`
         next_free: Option<usize>,
@@ -27,7 +27,7 @@ enum Node {
     /// The node is registered
     Used {
         /// The key identifying this event
-        key: usize,
+        key: u32,
 
         /// The [`Event`] itself
         event: Event,
@@ -119,7 +119,7 @@ impl EventList {
         }
 
         let mut node = Node::Free {
-            next_key: id.key() + 1,
+            next_key: id.key().wrapping_add(1),
             next_free: self.first_free,
         };
         std::mem::swap(&mut node, &mut self.list[id.index()]);
@@ -179,7 +179,7 @@ impl Node {
     }
 
     /// Gets the key for this event if it used or the next key if it is free
-    pub(self) fn key(&self) -> usize {
+    pub(self) fn key(&self) -> u32 {
         match self {
             Node::Free {
                 next_key,
