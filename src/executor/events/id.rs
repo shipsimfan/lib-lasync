@@ -26,6 +26,11 @@ impl EventID {
         }
     }
 
+    /// Creates an [`EventID`] from `value`
+    pub(super) fn from_u64(value: u64) -> Self {
+        EventID { int: value }
+    }
+
     /// Gets the index of this event in the list
     pub(super) fn index(&self) -> usize {
         unsafe { self.id.index as usize }

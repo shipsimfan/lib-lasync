@@ -65,10 +65,10 @@ impl Future for Timer {
 
 impl Drop for Timer {
     fn drop(&mut self) {
+        // Unregister the event
+        EventManager::unregister(self.id).unwrap();
+
         // Close the timer
         unsafe { timer_delete(self.timer) };
-
-        // Unregister the event
-        EventManager::unregister(self.id)
     }
 }

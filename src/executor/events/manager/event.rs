@@ -23,6 +23,13 @@ impl Event {
         self.file_descriptor
     }
 
+    pub(super) fn wake(&mut self) {
+        match self.waker.take() {
+            Some(waker) => waker.wake(),
+            None => {}
+        }
+    }
+
     /// Sets the [`Waker`] associated with the event
     pub(super) fn set_waker(&mut self, waker: Option<Waker>) {
         self.waker = waker;

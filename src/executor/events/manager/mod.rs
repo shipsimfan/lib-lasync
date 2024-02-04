@@ -1,10 +1,12 @@
 use super::EventID;
+use epoll::EPoll;
 use event::Event;
 use linux::signal::{sigevent, sigval, SIGEV_SIGNAL};
 use list::EventList;
 use local::LocalEventManager;
-use std::{ffi::c_int, pin::Pin, task::Waker};
+use std::{ffi::c_int, task::Waker};
 
+mod epoll;
 mod event;
 mod list;
 mod local;
@@ -19,7 +21,7 @@ pub struct EventManager {
 impl EventManager {
     /// Creates a new [`EventManager`] for the current thread
     pub(in crate::executor) fn new() -> linux::Result<Self> {
-        let local_event_manager = LocalEventManager::new();
+        let local_event_manager = LocalEventManager::new()?;
 
         tls::register(local_event_manager);
 
@@ -32,7 +34,7 @@ impl EventManager {
     }
 
     /// Blocks the current thread until an event triggers and wakes any triggered events
-    pub(in crate::executor) fn poll(&self) {
+    pub(in crate::executor) fn poll(&self) -> linux::Result<()> {
         tls::get_mut(|manager| manager.poll())
     }
 
@@ -43,11 +45,10 @@ impl EventManager {
 
     /// Registers a new event for the current thread and registers a file descriptor for
     /// monitoring. This function returns the [`EventID`] for the new event.
-    pub fn register_fd(fd: c_int) -> EventID {
+    pub fn register_fd(fd: c_int, events: u32) -> linux::Result<EventID> {
         tls::get_mut(|manager| {
             let id = manager.register();
-            manager.set_fd(id, Some(fd));
-            id
+            manager.set_fd(id, Some(fd), events).map(|_| id)
         })
     }
 
@@ -77,7 +78,7 @@ impl EventManager {
     }
 
     /// Unregisters an event for the current thread
-    pub fn unregister(event: EventID) {
+    pub fn unregister(event: EventID) -> linux::Result<()> {
         tls::get_mut(|manager| manager.unregister(event))
     }
 }

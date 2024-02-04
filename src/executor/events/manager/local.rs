@@ -1,4 +1,4 @@
-use super::EventList;
+use super::{EPoll, EventList};
 use crate::executor::EventID;
 use std::{ffi::c_int, task::Waker};
 
@@ -6,14 +6,17 @@ use std::{ffi::c_int, task::Waker};
 pub(super) struct LocalEventManager {
     /// The list of active events
     events: EventList,
+
+    epoll: EPoll,
 }
 
 impl LocalEventManager {
     /// Creates a new [`LocalEventManager`]
-    pub(super) fn new() -> Self {
-        LocalEventManager {
-            events: EventList::new(),
-        }
+    pub(super) fn new() -> linux::Result<Self> {
+        let epoll = EPoll::new()?;
+        let events = EventList::new();
+
+        Ok(LocalEventManager { events, epoll })
     }
 
     /// Gets the number of active events
@@ -35,39 +38,52 @@ impl LocalEventManager {
     }
 
     /// Sets a file descriptor associated with an event
-    pub(super) fn set_fd(&mut self, event: EventID, fd: Option<c_int>) {
+    pub(super) fn set_fd(
+        &mut self,
+        event: EventID,
+        fd: Option<c_int>,
+        events: u32,
+    ) -> linux::Result<()> {
         if let Some(old_fd) = self.events[event].set_fd(fd) {
-            todo!("Unregister with epoll");
+            self.epoll.unregister_fd(old_fd)?;
         }
 
         if let Some(fd) = fd {
-            todo!("Register with epoll");
+            self.epoll.register_fd(fd, events, event.as_u64())?;
         }
+
+        Ok(())
     }
 
     /// Blocks the current thread until an event triggers and wakes any triggered events
-    pub(super) fn poll(&mut self) {
-        let mut timeout = -1;
-        loop {
-            todo!("Poll from epoll");
+    pub(super) fn poll(&mut self) -> linux::Result<()> {
+        let mut block = true;
+        while let Some(event_id) = self.epoll.poll(block)? {
+            block = false;
+            let event_id = EventID::from_u64(event_id);
 
-            todo!("Get waker");
+            let event = match self.events.get_mut(event_id) {
+                Some(event) => event,
+                None => continue,
+            };
 
-            todo!("Call waker");
-
-            todo!("Clear waker");
+            event.wake();
         }
+
+        Ok(())
     }
 
     /// Unregisters an event
-    pub(super) fn unregister(&mut self, event: EventID) {
+    pub(super) fn unregister(&mut self, event: EventID) -> linux::Result<()> {
         let event = match self.events.remove(event) {
             Some(event) => event,
-            None => return,
+            None => return Ok(()),
         };
 
         if let Some(fd) = event.fd() {
-            todo!("Unregister with epoll");
+            self.epoll.unregister_fd(fd)?;
         }
+
+        Ok(())
     }
 }
