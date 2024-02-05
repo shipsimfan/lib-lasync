@@ -12,4 +12,4 @@ dependencies = [
 [[package]]
 name = "linux"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-linux#84f2934161f44e9edb14d58b6ff6949e41b0d1da"
+source = "git+https://github.com/shipsimfan/lib-linux#2ee2ba3409dbfec17137c4a6f6c6cef2d6c68330"

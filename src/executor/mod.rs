@@ -1,6 +1,6 @@
 //! Single-threaded executor for async/await
 
-use std::{future::Future, task::Context};
+use std::{ffi::c_int, future::Future, task::Context};
 use task::Task;
 use waker::WakerRef;
 
@@ -13,15 +13,15 @@ pub use events::{EventID, EventManager};
 pub use future_queue::FutureQueue;
 
 /// Runs a local executor on `future`
-pub fn run(future: impl Future<Output = ()> + 'static) -> linux::Result<()> {
+pub fn run(signal_number: c_int, future: impl Future<Output = ()> + 'static) -> linux::Result<()> {
     let queue = FutureQueue::new();
     queue.push(future);
-    run_queue(queue)
+    run_queue(signal_number, queue)
 }
 
 /// Executes the tasks in the [`FutureQueue`]
-pub fn run_queue(queue: FutureQueue) -> linux::Result<()> {
-    let event_manager = EventManager::new()?;
+pub fn run_queue(signal_number: c_int, queue: FutureQueue) -> linux::Result<()> {
+    let event_manager = EventManager::new(signal_number)?;
 
     loop {
         // Drive any tasks that need to be

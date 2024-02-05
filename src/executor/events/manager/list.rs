@@ -1,5 +1,4 @@
-use super::Event;
-use crate::executor::EventID;
+use crate::executor::{events::event::Event, EventID};
 use std::ops::{Index, IndexMut};
 
 /// A list of outstanding events
@@ -67,6 +66,10 @@ impl EventList {
 
     /// Gets an event with `id` mutably
     pub(super) fn get_mut(&mut self, id: EventID) -> Option<&mut Event> {
+        if id.index() >= self.list.len() {
+            return None;
+        }
+
         let node = &mut self.list[id.index()];
         if node.key() != id.key() {
             return None;

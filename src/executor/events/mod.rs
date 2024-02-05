@@ -1,5 +1,8 @@
-mod id;
-mod manager;
+use signal::Signal;
 
-pub use id::EventID;
+mod event;
+mod manager;
+mod signal;
+
+pub use event::EventID;
 pub use manager::EventManager;

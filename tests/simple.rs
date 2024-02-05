@@ -1,8 +1,10 @@
-use std::time::Duration;
+use std::{ffi::c_int, time::Duration};
+
+const SIGNAL_NUMBER: c_int = linux::signal::SIGUSR1;
 
 #[test]
 fn one_timer() {
-    lasync::executor::run(async {
+    lasync::executor::run(SIGNAL_NUMBER, async {
         println!("Hello");
 
         lasync::futures::Timer::new(Duration::from_secs(1))
@@ -44,5 +46,5 @@ fn two_timers() {
         println!("Task 2 - End");
     });
 
-    lasync::executor::run_queue(queue).unwrap();
+    lasync::executor::run_queue(SIGNAL_NUMBER, queue).unwrap();
 }

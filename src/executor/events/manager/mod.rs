@@ -1,13 +1,11 @@
 use super::EventID;
 use epoll::EPoll;
-use event::Event;
 use linux::signal::{sigevent, sigval, SIGEV_SIGNAL};
 use list::EventList;
 use local::LocalEventManager;
 use std::{ffi::c_int, task::Waker};
 
 mod epoll;
-mod event;
 mod list;
 mod local;
 mod tls;
@@ -20,8 +18,8 @@ pub struct EventManager {
 
 impl EventManager {
     /// Creates a new [`EventManager`] for the current thread
-    pub(in crate::executor) fn new() -> linux::Result<Self> {
-        let local_event_manager = LocalEventManager::new()?;
+    pub(in crate::executor) fn new(signal_number: c_int) -> linux::Result<Self> {
+        let local_event_manager = LocalEventManager::new(signal_number)?;
 
         tls::register(local_event_manager);
 
@@ -55,14 +53,14 @@ impl EventManager {
     /// Registers a new event for the current thread and returns the [`EventID`] and a [`sigevent`]
     /// object for registering the signal callback.
     pub fn register_signal() -> (EventID, sigevent) {
-        let id = Self::register();
+        let (id, signo) = tls::get_mut(|manager| (manager.register(), manager.signal_number()));
 
         let sigevent = sigevent {
             notify: SIGEV_SIGNAL,
+            signo,
             value: sigval {
                 ptr: id.as_u64() as _,
             },
-            signo: todo!("Signal number"),
             ..Default::default()
         };
 

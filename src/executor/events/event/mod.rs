@@ -1,5 +1,9 @@
 use std::{ffi::c_int, task::Waker};
 
+mod id;
+
+pub use id::EventID;
+
 /// A queued event
 pub(super) struct Event {
     /// The file descriptor that was inserted into epoll
