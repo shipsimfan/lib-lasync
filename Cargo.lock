@@ -3,13 +3,41 @@
 version = 3
 
 [[package]]
-name = "lasync"
+name = "executor"
 version = "0.1.0"
 dependencies = [
- "linux",
+ "executor-linux",
 ]
 
 [[package]]
-name = "linux"
+name = "executor-common"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-linux#2ee2ba3409dbfec17137c4a6f6c6cef2d6c68330"
+
+[[package]]
+name = "executor-linux"
+version = "0.1.0"
+dependencies = [
+ "executor-common",
+]
+
+[[package]]
+name = "futures"
+version = "0.1.0"
+dependencies = [
+ "futures-linux",
+]
+
+[[package]]
+name = "futures-linux"
+version = "0.1.0"
+dependencies = [
+ "executor",
+]
+
+[[package]]
+name = "lasync"
+version = "0.1.0"
+dependencies = [
+ "executor",
+ "futures",
+]

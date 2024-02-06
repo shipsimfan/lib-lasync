@@ -1,4 +1,4 @@
-use super::FutureQueue;
+use crate::FutureQueue;
 use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 /// A [`Future`] which can re-schedule itself
@@ -23,7 +23,7 @@ impl Task {
     }
 
     /// Gets the underyling [`Future`]
-    pub(super) fn future(&self) -> &RefCell<Option<Pin<Box<dyn Future<Output = ()>>>>> {
+    pub(crate) fn future(&self) -> &RefCell<Option<Pin<Box<dyn Future<Output = ()>>>>> {
         &self.future
     }
 

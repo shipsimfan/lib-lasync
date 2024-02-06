@@ -1,0 +1,13 @@
+[package]
+name = "futures"
+description = "The futures used by lasync"
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+futures-linux.path = "linux"

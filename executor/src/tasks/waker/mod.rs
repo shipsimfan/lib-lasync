@@ -4,7 +4,7 @@ use std::{marker::PhantomData, mem::ManuallyDrop, ops::Deref, rc::Rc, task::Wake
 mod vtable;
 
 /// A reference to a [`Waker`]
-pub(super) struct WakerRef<'a> {
+pub(crate) struct WakerRef<'a> {
     /// The [`Waker`] which this is "referencing"
     waker: ManuallyDrop<Waker>,
 
@@ -19,7 +19,7 @@ fn create_waker(task: *const Task) -> Waker {
 
 impl<'a> WakerRef<'a> {
     /// Creates a new [`WakerRef`] for a [`Task`]
-    pub(super) fn new(task: &'a Rc<Task>) -> Self {
+    pub(crate) fn new(task: &'a Rc<Task>) -> Self {
         let waker = ManuallyDrop::new(create_waker(Rc::as_ptr(task)));
 
         WakerRef {

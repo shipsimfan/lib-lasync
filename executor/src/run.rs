@@ -1,26 +1,15 @@
-//! Single-threaded executor for async/await
-
+use crate::{FutureQueue, WakerRef};
 use std::{ffi::c_int, future::Future, task::Context};
-use task::Task;
-use waker::WakerRef;
-
-mod events;
-mod future_queue;
-mod task;
-mod waker;
-
-pub use events::{EventID, EventManager};
-pub use future_queue::FutureQueue;
 
 /// Runs a local executor on `future`
-pub fn run(signal_number: c_int, future: impl Future<Output = ()> + 'static) -> linux::Result<()> {
+pub fn run(signal_number: c_int, future: impl Future<Output = ()> + 'static) -> Result<()> {
     let queue = FutureQueue::new();
     queue.push(future);
     run_queue(signal_number, queue)
 }
 
 /// Executes the tasks in the [`FutureQueue`]
-pub fn run_queue(signal_number: c_int, queue: FutureQueue) -> linux::Result<()> {
+pub fn run_queue(signal_number: c_int, queue: FutureQueue) -> Result<()> {
     let event_manager = EventManager::new(signal_number)?;
 
     loop {

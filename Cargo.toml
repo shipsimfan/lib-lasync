@@ -1,5 +1,9 @@
-[package]
-name = "lasync"
+[workspace]
+default-members = ["."]
+
+members = ["executor/linux", "futures/linux"]
+
+[workspace.package]
 version = "0.1.0"
 description = "A single-threaded async executor"
 authors = ["Lance Hart <me@lancehart>"]
@@ -8,5 +12,24 @@ repository = "https://github.com/shipsimfan/lib-lasync.git"
 license = "GPL-3.0-or-later"
 publish = false
 
+[workspace.dependencies]
+executor.path = "executor"
+executor-common.path = "executor/common"
+
+futures.path = "futures"
+
+
+[package]
+name = "lasync"
+
+version.workspace = true
+description.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
 [dependencies]
-linux.git = "https://github.com/shipsimfan/lib-linux"
+executor.workspace = true
+futures.workspace = true

@@ -1,0 +1,13 @@
+[package]
+name = "executor-linux"
+description = "Executor implementation for Linux"
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+executor-common.workspace = true

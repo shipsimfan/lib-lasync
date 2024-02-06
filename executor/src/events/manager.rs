@@ -1,14 +1,6 @@
-use super::EventID;
-use epoll::EPoll;
 use linux::signal::{sigevent, sigval, SIGEV_SIGNAL};
-use list::EventList;
 use local::LocalEventManager;
 use std::{ffi::c_int, task::Waker};
-
-mod epoll;
-mod list;
-mod local;
-mod tls;
 
 /// The manager for events on the current thread
 pub struct EventManager {

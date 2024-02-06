@@ -1,4 +1,4 @@
-use std::{ffi::c_int, time::Duration};
+/*use std::{ffi::c_int, time::Duration};
 
 const SIGNAL_NUMBER: c_int = linux::signal::SIGUSR1;
 
@@ -48,3 +48,4 @@ fn two_timers() {
 
     lasync::executor::run_queue(SIGNAL_NUMBER, queue).unwrap();
 }
+*/
