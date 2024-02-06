@@ -1,6 +1,9 @@
 use crate::EventID;
 use node::Node;
-use std::ops::{Index, IndexMut};
+use std::{
+    num::NonZeroUsize,
+    ops::{Index, IndexMut},
+};
 
 mod node;
 
@@ -18,15 +21,14 @@ pub struct List<T> {
 
 impl<T> List<T> {
     /// Creates a new empty [`List`] that can hold at most `size` elements
-    ///
-    /// # Panic
-    /// This function will panic if `size` is zero
-    pub fn new(size: usize) -> Self {
-        assert_ne!(size, 0);
-
-        let mut list = Vec::with_capacity(size);
-        for i in 0..size {
-            let next_free = if i + 1 < size { Some(i + 1) } else { None };
+    pub fn new(size: NonZeroUsize) -> Self {
+        let mut list = Vec::with_capacity(size.get());
+        for i in 0..list.capacity() {
+            let next_free = if i + 1 < list.capacity() {
+                Some(i + 1)
+            } else {
+                None
+            };
 
             list.push(Node::new(next_free));
         }

@@ -1,4 +1,5 @@
 use crate::platform::LocalEventManager;
+use std::num::NonZeroUsize;
 
 mod tls;
 
@@ -9,18 +10,19 @@ pub struct EventManager {
 }
 
 impl EventManager {
-    /// Creates a new [`EventManager`] for the current thread
+    /// Creates a new [`EventManager`] for the current thread that can handle at most `size`
+    /// simultaneous events
     ///
     /// # Panic
     /// This function will panic if another [`EventManager`] has already been created for the
     /// current thread.
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(size: NonZeroUsize) -> Self {
         tls::get_opt_mut(|manager| {
             if manager.is_some() {
                 panic!("Attempted to created a second event manager on a thread");
             }
 
-            *manager = Some(LocalEventManager::new());
+            *manager = Some(LocalEventManager::new(size));
         });
 
         EventManager { _priv: () }
@@ -38,7 +40,7 @@ impl EventManager {
 
     /// Gets the number of outstanding events
     pub(crate) fn len(&self) -> usize {
-        todo!("EventManager::len")
+        tls::get(|manager| manager.len())
     }
 
     /// Waits for an event to be triggered
