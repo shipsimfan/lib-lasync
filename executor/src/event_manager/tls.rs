@@ -34,6 +34,6 @@ pub(super) fn get<T, F: FnOnce(&LocalEventManager) -> T>(f: F) -> T {
 ///
 /// # Panic
 /// This function will panic if the local event manager has not been set
-pub(super) fn get_mut<T, F: FnOnce(&LocalEventManager) -> T>(f: F) -> T {
+pub(super) fn get_mut<T, F: FnOnce(&mut LocalEventManager) -> T>(f: F) -> T {
     get_opt_mut(|manager| f(manager.as_mut().unwrap()))
 }

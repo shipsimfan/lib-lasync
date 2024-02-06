@@ -26,10 +26,22 @@ impl EventManager {
         EventManager { _priv: () }
     }
 
+    /// Gets the [`LocalEventManager`] for the current thread
+    pub fn get_local<T, F: FnOnce(&LocalEventManager) -> T>(f: F) -> T {
+        tls::get(f)
+    }
+
+    /// Gets the [`LocalEventManager`] for the current thread mutably
+    pub fn get_local_mut<T, F: FnOnce(&mut LocalEventManager) -> T>(f: F) -> T {
+        tls::get_mut(f)
+    }
+
+    /// Gets the number of outstanding events
     pub(crate) fn len(&self) -> usize {
         todo!("EventManager::len")
     }
 
+    /// Waits for an event to be triggered
     pub(crate) fn poll(&self) {
         todo!("EventManager::poll")
     }
