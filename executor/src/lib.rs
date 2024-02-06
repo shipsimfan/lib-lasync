@@ -6,9 +6,13 @@
 #![deny(rustdoc::redundant_explicit_links)]
 #![warn(rustdoc::broken_intra_doc_links)]
 
+mod event_manager;
+mod platform;
 mod run;
 mod tasks;
 
+pub use event_manager::EventManager;
+pub use run::{run, run_queue};
 pub use tasks::FutureQueue;
 
 use tasks::WakerRef;

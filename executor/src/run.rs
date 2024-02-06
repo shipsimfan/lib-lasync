@@ -1,16 +1,16 @@
-use crate::{FutureQueue, WakerRef};
-use std::{ffi::c_int, future::Future, task::Context};
+use crate::{platform::Result, EventManager, FutureQueue, WakerRef};
+use std::{future::Future, task::Context};
 
 /// Runs a local executor on `future`
-pub fn run(signal_number: c_int, future: impl Future<Output = ()> + 'static) -> Result<()> {
+pub fn run(future: impl Future<Output = ()> + 'static) -> Result<()> {
     let queue = FutureQueue::new();
     queue.push(future);
-    run_queue(signal_number, queue)
+    run_queue(queue)
 }
 
 /// Executes the tasks in the [`FutureQueue`]
-pub fn run_queue(signal_number: c_int, queue: FutureQueue) -> Result<()> {
-    let event_manager = EventManager::new(signal_number)?;
+pub fn run_queue(queue: FutureQueue) -> Result<()> {
+    let event_manager = EventManager::new();
 
     loop {
         // Drive any tasks that need to be
@@ -35,6 +35,6 @@ pub fn run_queue(signal_number: c_int, queue: FutureQueue) -> Result<()> {
         }
 
         // Wait for events as there are no more tasks to perform
-        event_manager.poll()?;
+        event_manager.poll();
     }
 }

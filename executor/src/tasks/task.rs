@@ -2,7 +2,7 @@ use crate::FutureQueue;
 use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 /// A [`Future`] which can re-schedule itself
-pub(super) struct Task {
+pub(crate) struct Task {
     /// The [`Future`] to be driven to completion
     future: RefCell<Option<Pin<Box<dyn Future<Output = ()>>>>>,
 

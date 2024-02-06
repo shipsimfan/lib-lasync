@@ -11,3 +11,5 @@ publish.workspace = true
 
 [dependencies]
 executor-common.workspace = true
+
+linux.git = "https://github.com/shipsimfan/lib-linux"

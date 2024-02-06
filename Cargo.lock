@@ -19,6 +19,7 @@ name = "executor-linux"
 version = "0.1.0"
 dependencies = [
  "executor-common",
+ "linux",
 ]
 
 [[package]]
@@ -57,3 +58,8 @@ dependencies = [
  "executor",
  "futures",
 ]
+
+[[package]]
+name = "linux"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-linux#4f6faf903092c73d0764acde299978579ed947b8"
