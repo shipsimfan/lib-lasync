@@ -7,6 +7,7 @@ name = "executor"
 version = "0.1.0"
 dependencies = [
  "executor-linux",
+ "executor-windows",
 ]
 
 [[package]]
@@ -21,14 +22,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "executor-windows"
+version = "0.1.0"
+dependencies = [
+ "executor-common",
+]
+
+[[package]]
 name = "futures"
 version = "0.1.0"
 dependencies = [
  "futures-linux",
+ "futures-windows",
 ]
 
 [[package]]
 name = "futures-linux"
+version = "0.1.0"
+dependencies = [
+ "executor",
+]
+
+[[package]]
+name = "futures-windows"
 version = "0.1.0"
 dependencies = [
  "executor",

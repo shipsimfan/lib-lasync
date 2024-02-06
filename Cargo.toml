@@ -1,7 +1,13 @@
 [workspace]
 default-members = ["."]
 
-members = ["executor/linux", "futures/linux"]
+members = [
+    "executor/linux",
+    "executor/windows",
+
+    "futures/linux",
+    "futures/windows",
+]
 
 [workspace.package]
 version = "0.1.0"

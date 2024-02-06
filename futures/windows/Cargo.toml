@@ -1,0 +1,13 @@
+[package]
+name = "futures-windows"
+description = "Futures implemented for Windows"
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+executor.workspace = true
