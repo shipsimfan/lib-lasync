@@ -1,13 +1,9 @@
-/// An ID which uniquely identifies an event
-#[derive(Clone, Copy)]
-pub union EventID {
-    id: ID,
-    int: u64,
-}
+use std::fmt::Display;
 
-/// The individual parts of the ID
+/// An ID which uniquely identifies an event
+#[repr(align(8))]
 #[derive(Clone, Copy, PartialEq, Eq)]
-struct ID {
+pub struct EventID {
     /// The index into the event list
     index: u32,
 
@@ -17,43 +13,36 @@ struct ID {
 
 impl EventID {
     /// Creates a new [`EventID`]
-    pub(in crate::executor::events) fn new(index: usize, key: u32) -> Self {
+    pub(crate) fn new(index: usize, key: u32) -> Self {
         EventID {
-            id: ID {
-                index: index as u32,
-                key,
-            },
+            index: index as u32,
+            key,
         }
     }
 
     /// Creates an [`EventID`] from `value`
-    pub(in crate::executor::events) fn from_u64(value: u64) -> Self {
-        EventID { int: value }
+    pub unsafe fn from_u64(value: u64) -> Self {
+        std::mem::transmute(value)
     }
 
     /// Gets the index of this event in the list
-    pub(in crate::executor::events) fn index(&self) -> usize {
-        unsafe { self.id.index as usize }
+    pub fn index(&self) -> usize {
+        self.index as usize
     }
 
     /// Gets the key this event was assigned
-    pub(in crate::executor::events) fn key(&self) -> u32 {
-        unsafe { self.id.key }
+    pub fn key(&self) -> u32 {
+        self.key
     }
 
-    pub(in crate::executor::events) fn as_u64(&self) -> u64 {
-        unsafe { self.int }
-    }
-}
-
-impl PartialEq for EventID {
-    fn eq(&self, other: &Self) -> bool {
-        unsafe { self.id == other.id }
+    /// Converts this value into a [`u64`]
+    pub fn into_u64(self) -> u64 {
+        unsafe { std::mem::transmute(self) }
     }
 }
 
-impl std::fmt::Display for EventID {
+impl Display for EventID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}", unsafe { self.id.index }, unsafe { self.id.key })
+        write!(f, "{}:{}", self.index, self.key)
     }
 }
