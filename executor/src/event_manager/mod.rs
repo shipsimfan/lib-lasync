@@ -1,4 +1,5 @@
 use crate::platform::LocalEventManager;
+use executor_common::Pollable;
 use std::num::NonZeroUsize;
 
 mod tls;
@@ -44,8 +45,9 @@ impl EventManager {
     }
 
     /// Waits for an event to be triggered
-    pub(crate) fn poll(&self) {
-        todo!("EventManager::poll")
+    pub(crate) fn poll(&mut self) {
+        let poll = tls::get_mut(|manager| manager.poll());
+        poll.poll();
     }
 }
 

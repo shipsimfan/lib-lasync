@@ -9,6 +9,9 @@ repository.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[dependencies]
+executor-common.workspace = true
+
 [target.'cfg(target_os = "linux")'.dependencies]
 executor-linux.path = "linux"
 
