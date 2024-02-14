@@ -1,5 +1,4 @@
-use crate::Event;
-use executor_common::List;
+use executor_common::{Event, List};
 use std::num::NonZeroUsize;
 
 /// The manager of events on a thread

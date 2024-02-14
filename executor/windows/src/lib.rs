@@ -10,5 +10,4 @@ mod manager;
 
 pub use manager::LocalEventManager;
 
-/// TODO: Temporary placeholder, replace with [`win32::Result`]
-pub type Result<T> = std::io::Result<T>;
+pub use win32::Result;
