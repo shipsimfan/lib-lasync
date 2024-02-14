@@ -27,6 +27,7 @@ name = "executor-windows"
 version = "0.1.0"
 dependencies = [
  "executor-common",
+ "win32",
 ]
 
 [[package]]
@@ -63,3 +64,8 @@ dependencies = [
 name = "linux"
 version = "0.1.0"
 source = "git+https://github.com/shipsimfan/lib-linux#4f6faf903092c73d0764acde299978579ed947b8"
+
+[[package]]
+name = "win32"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-win32#bcaaed680dfc15ab3b99690cf72655a8243ef739"

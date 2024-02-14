@@ -11,3 +11,5 @@ publish.workspace = true
 
 [dependencies]
 executor-common.workspace = true
+
+win32.workspace = true

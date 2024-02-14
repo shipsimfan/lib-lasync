@@ -24,6 +24,9 @@ executor-common.path = "executor/common"
 
 futures.path = "futures"
 
+linux.git = "https://github.com/shipsimfan/lib-linux"
+win32.git = "https://github.com/shipsimfan/lib-win32"
+
 
 [package]
 name = "lasync"
