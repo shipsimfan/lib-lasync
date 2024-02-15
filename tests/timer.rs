@@ -1,13 +1,13 @@
-/*use std::{ffi::c_int, time::Duration};
+use std::{num::NonZeroUsize, time::Duration};
 
-const SIGNAL_NUMBER: c_int = linux::signal::SIGUSR1;
+const SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(32) };
 
 #[test]
 fn one_timer() {
-    lasync::executor::run(SIGNAL_NUMBER, async {
+    lasync::executor::run(SIZE, async {
         println!("Hello");
 
-        lasync::futures::Timer::new(Duration::from_secs(1))
+        lasync::futures::time::sleep(Duration::from_secs(1))
             .unwrap()
             .await;
 
@@ -23,7 +23,7 @@ fn two_timers() {
     queue.push(async {
         println!("Task 1 - Start");
 
-        lasync::futures::Timer::new(Duration::from_millis(1500))
+        lasync::futures::time::sleep(Duration::from_millis(1500))
             .unwrap()
             .await;
 
@@ -33,19 +33,18 @@ fn two_timers() {
     queue.push(async {
         println!("Task 2 - Start");
 
-        lasync::futures::Timer::new(Duration::from_millis(500))
+        lasync::futures::time::sleep(Duration::from_millis(500))
             .unwrap()
             .await;
 
         println!("Task 2 - Middle");
 
-        lasync::futures::Timer::new(Duration::from_millis(1500))
+        lasync::futures::time::sleep(Duration::from_millis(1500))
             .unwrap()
             .await;
 
         println!("Task 2 - End");
     });
 
-    lasync::executor::run_queue(SIGNAL_NUMBER, queue).unwrap();
+    lasync::executor::run_queue(SIZE, queue).unwrap();
 }
-*/

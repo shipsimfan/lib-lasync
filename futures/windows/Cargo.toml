@@ -10,4 +10,4 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-executor.workspace = true
+win32.workspace = true
