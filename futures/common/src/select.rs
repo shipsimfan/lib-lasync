@@ -6,7 +6,10 @@ use std::{
 
 /// A [`Future`] which yields when one of the two contained [`Future`]s yield
 pub struct Select<A: Future, B: Future> {
+    /// The first future. **DO NOT ACCESS THIS FIELD DIRECTY**, use `Self::project()`.
     a: A,
+
+    /// The second future. **DO NOT ACCESS THIS FIELD DIRECTY**, use `Self::project()`.
     b: B,
 }
 
@@ -39,7 +42,19 @@ macro_rules! select {
 impl<A: Future, B: Future> Select<A, B> {
     /// Creates a new [`Select`] future
     pub fn new(a: A, b: B) -> Self {
-        todo!("Select::new()")
+        Select { a, b }
+    }
+
+    /// Gets the contain futures pinned
+    ///
+    /// # SAFTEY
+    /// This is the only way to access the contained futures, do not acces them directly.
+    unsafe fn project(self: Pin<&mut Self>) -> (Pin<&mut A>, Pin<&mut B>) {
+        let this = self.get_unchecked_mut();
+        (
+            Pin::new_unchecked(&mut this.a),
+            Pin::new_unchecked(&mut this.b),
+        )
     }
 }
 
@@ -47,6 +62,16 @@ impl<A: Future, B: Future> Future for Select<A, B> {
     type Output = SelectResult<A::Output, B::Output>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        todo!("Select::poll()")
+        let (a, b) = unsafe { self.project() };
+
+        if let Poll::Ready(value) = a.poll(cx) {
+            return Poll::Ready(SelectResult::A(value));
+        }
+
+        if let Poll::Ready(value) = b.poll(cx) {
+            return Poll::Ready(SelectResult::B(value));
+        }
+
+        Poll::Pending
     }
 }
