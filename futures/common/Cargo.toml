@@ -1,0 +1,10 @@
+[package]
+name = "futures-common"
+description = "Futures common to all platforms"
+
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true

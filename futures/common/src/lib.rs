@@ -1,4 +1,4 @@
-//! The futures used by lasync
+//! Futures common to all platforms
 
 #![deny(missing_docs)]
 #![deny(rustdoc::private_intra_doc_links)]
@@ -6,10 +6,6 @@
 #![deny(rustdoc::redundant_explicit_links)]
 #![warn(rustdoc::broken_intra_doc_links)]
 
-pub use futures_common::*;
+mod select;
 
-#[cfg(target_os = "windows")]
-pub use futures_windows::*;
-
-#[cfg(target_os = "linux")]
-pub use futures_linux::*;
+pub use select::{select, Select, SelectResult};

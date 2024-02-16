@@ -23,6 +23,7 @@ executor.path = "executor"
 executor-common.path = "executor/common"
 
 futures.path = "futures"
+futures-common.path = "futures/common"
 
 linux.git = "https://github.com/shipsimfan/lib-linux"
 win32.git = "https://github.com/shipsimfan/lib-win32"

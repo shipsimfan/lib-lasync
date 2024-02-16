@@ -35,9 +35,14 @@ dependencies = [
 name = "futures"
 version = "0.1.0"
 dependencies = [
+ "futures-common",
  "futures-linux",
  "futures-windows",
 ]
+
+[[package]]
+name = "futures-common"
+version = "0.1.0"
 
 [[package]]
 name = "futures-linux"
