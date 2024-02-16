@@ -19,7 +19,7 @@ pub struct Sleep {
 }
 
 /// Sleep until `duration` has passed
-pub fn sleep(duration: Duration) -> win32::Result<Sleep> {
+pub fn sleep(duration: Duration) -> crate::Result<Sleep> {
     Sleep::new(duration)
 }
 
