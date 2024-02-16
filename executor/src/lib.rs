@@ -12,6 +12,7 @@ mod run;
 mod tasks;
 
 pub use event_manager::EventManager;
+pub use executor_common::EventID;
 pub use run::{run, run_queue};
 pub use tasks::FutureQueue;
 
