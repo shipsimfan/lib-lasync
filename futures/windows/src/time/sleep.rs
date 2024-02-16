@@ -1,6 +1,6 @@
 use super::WaitableTimer;
 use crate::EventRef;
-use executor::{EventID, EventManager};
+use executor::EventManager;
 use std::{
     future::Future,
     pin::Pin,
@@ -23,25 +23,13 @@ pub fn sleep(duration: Duration) -> crate::Result<Sleep> {
     Sleep::new(duration)
 }
 
-/// Creates and starts a timer to a given duration
-fn create_and_set_timer(duration: Duration, event_id: EventID) -> crate::Result<WaitableTimer> {
-    let mut timer = WaitableTimer::new()?;
-    timer.set(duration, None, event_id)?;
-    Ok(timer)
-}
-
-/// Attempts to register an event with the local event manager
-fn register() -> crate::Result<EventID> {
-    EventManager::get_local_mut(|manager| manager.register(0))
-        .ok_or(win32::Error::new(win32::ERROR_TOO_MANY_CMDS))
-}
-
 impl Sleep {
     /// Creates a new [`Sleep`] which yields after `duration` has passed
     pub fn new(duration: Duration) -> crate::Result<Self> {
-        let event_id = EventRef::new(register()?);
+        let event_id = EventRef::register()?;
 
-        let timer = create_and_set_timer(duration, *event_id)?;
+        let mut timer = WaitableTimer::new()?;
+        timer.set(duration, None, *event_id)?;
 
         Ok(Sleep { timer, event_id })
     }

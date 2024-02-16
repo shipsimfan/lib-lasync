@@ -5,9 +5,11 @@ use std::ops::Deref;
 pub(crate) struct EventRef(EventID);
 
 impl EventRef {
-    /// Creates a new [`EventRef`]
-    pub(crate) fn new(event_id: EventID) -> Self {
-        EventRef(event_id)
+    /// Registers a new event with the local event manager and returns an [`EventRef`] to it
+    pub(crate) fn register() -> crate::Result<Self> {
+        EventManager::get_local_mut(|manager| manager.register(0))
+            .map(|event_id| EventRef(event_id))
+            .ok_or(win32::Error::new(win32::ERROR_TOO_MANY_CMDS))
     }
 }
 

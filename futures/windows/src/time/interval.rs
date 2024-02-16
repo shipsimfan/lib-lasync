@@ -1,6 +1,6 @@
 use super::WaitableTimer;
 use crate::EventRef;
-use executor::{EventID, EventManager};
+use executor::EventManager;
 use std::{
     future::Future,
     pin::Pin,
@@ -34,29 +34,13 @@ pub fn interval_with_delay(delay: Duration, period: Duration) -> crate::Result<I
     Interval::new(delay, period)
 }
 
-/// Creates and starts a timer to a given duration
-fn create_and_set_timer(
-    delay: Duration,
-    period: Duration,
-    event_id: EventID,
-) -> crate::Result<WaitableTimer> {
-    let mut timer = WaitableTimer::new()?;
-    timer.set(delay, Some(period), event_id)?;
-    Ok(timer)
-}
-
-/// Attempts to register an event with the local event manager
-fn register() -> crate::Result<EventID> {
-    EventManager::get_local_mut(|manager| manager.register(0))
-        .ok_or(win32::Error::new(win32::ERROR_TOO_MANY_CMDS))
-}
-
 impl Interval {
     /// Creates a new [`Interval`] that first yields after `delay` and then yields every `period`
     pub fn new(delay: Duration, period: Duration) -> crate::Result<Interval> {
-        let event_id = EventRef::new(register()?);
+        let event_id = EventRef::register()?;
 
-        let timer = create_and_set_timer(delay, period, *event_id)?;
+        let mut timer = WaitableTimer::new()?;
+        timer.set(delay, Some(period), *event_id)?;
 
         Ok(Interval { timer, event_id })
     }
