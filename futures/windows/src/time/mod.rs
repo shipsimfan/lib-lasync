@@ -9,6 +9,6 @@ mod timer;
 pub use interval::{interval, interval_with_delay, Interval};
 pub use sleep::{sleep, Sleep};
 pub use timeout::{timeout, Timeout};
-pub use timer::{Timer, TimerSleep};
+pub use timer::{Timer, TimerInterval, TimerSleep};
 
 use inner::WaitableTimer;
