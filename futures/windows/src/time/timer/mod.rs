@@ -1,13 +1,15 @@
 use super::WaitableTimer;
 use crate::{EventRef, Result};
 use executor::{EventID, EventManager};
-use std::time::Duration;
+use std::{future::Future, time::Duration};
 
 mod interval;
 mod sleep;
+mod timeout;
 
 pub use interval::TimerInterval;
 pub use sleep::TimerSleep;
+pub use timeout::TimerTimeout;
 
 /// A timer which can be used to make repeated time-based calls
 pub struct Timer {
@@ -45,6 +47,12 @@ impl Timer {
         period: Duration,
     ) -> Result<TimerInterval> {
         TimerInterval::new(self, delay, period)
+    }
+
+    /// Creates a [`TimerTimeout`] future which yields when either `future` yields or `timeout`
+    /// passes
+    pub fn timeout<F: Future>(&mut self, future: F, timeout: Duration) -> Result<TimerTimeout<F>> {
+        TimerTimeout::new(self, future, timeout)
     }
 
     /// Gets the [`EventID`] this timer has reserved
