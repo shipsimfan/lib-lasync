@@ -33,9 +33,8 @@ impl<T> Event<T> {
 
     /// Queues the associated task to be run
     pub fn wake(&mut self) {
-        match self.waker.take() {
-            Some(waker) => waker.wake(),
-            None => {}
+        if let Some(waker) = self.waker.take() {
+            waker.wake();
         }
     }
 
