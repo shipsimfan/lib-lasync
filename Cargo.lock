@@ -76,4 +76,4 @@ source = "git+https://github.com/shipsimfan/lib-linux#4f6faf903092c73d0764acde29
 [[package]]
 name = "win32"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-win32#a0f7370db7041ae213e68b4be45439e4da1092c2"
+source = "git+https://github.com/shipsimfan/lib-win32#98e300e2a7cf352cc025560cff946118465f1946"

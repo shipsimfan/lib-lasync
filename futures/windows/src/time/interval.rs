@@ -1,5 +1,5 @@
 use super::WaitableTimer;
-use crate::EventRef;
+use crate::{EventRef, Result};
 use executor::EventManager;
 use std::{
     future::Future,
@@ -25,18 +25,18 @@ pub struct Tick<'a> {
 }
 
 /// Creates an [`Interval`] future which yields immediately then yields every `period`
-pub fn interval(period: Duration) -> crate::Result<Interval> {
+pub fn interval(period: Duration) -> Result<Interval> {
     interval_with_delay(Duration::ZERO, period)
 }
 
 /// Creates an [`Interval`] future which first yields after `delay` then yields every `period`
-pub fn interval_with_delay(delay: Duration, period: Duration) -> crate::Result<Interval> {
+pub fn interval_with_delay(delay: Duration, period: Duration) -> Result<Interval> {
     Interval::new(delay, period)
 }
 
 impl Interval {
     /// Creates a new [`Interval`] that first yields after `delay` and then yields every `period`
-    pub fn new(delay: Duration, period: Duration) -> crate::Result<Interval> {
+    pub fn new(delay: Duration, period: Duration) -> Result<Interval> {
         let event_id = EventRef::register()?;
 
         let mut timer = WaitableTimer::new()?;

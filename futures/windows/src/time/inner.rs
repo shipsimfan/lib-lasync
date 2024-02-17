@@ -5,8 +5,8 @@ use std::{
     time::Duration,
 };
 use win32::{
-    try_get_last_error, CloseHandle, CreateWaitableTimer, SetWaitableTimer, DWORD, FALSE, HANDLE,
-    LARGE_INTEGER, LONG, LPVOID, TRUE,
+    try_get_last_error, CancelWaitableTimer, CloseHandle, CreateWaitableTimer, SetWaitableTimer,
+    DWORD, FALSE, HANDLE, LARGE_INTEGER, LONG, LPVOID, TRUE,
 };
 
 /// A Windows waitable timer
@@ -80,6 +80,20 @@ impl WaitableTimer {
         ))?;
 
         self.is_set = true;
+
+        Ok(())
+    }
+
+    /// Cancels the outstanding timer event
+    ///
+    /// # Panic
+    /// This function will panic if this timer is not already set.
+    pub(super) fn cancel(&mut self) -> Result<()> {
+        assert!(self.is_set);
+
+        try_get_last_error!(CancelWaitableTimer(self.handle))?;
+
+        self.is_set = false;
 
         Ok(())
     }

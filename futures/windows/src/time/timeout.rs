@@ -1,4 +1,5 @@
 use super::Sleep;
+use crate::Result;
 use futures_common::{Select, SelectResult};
 use std::{
     future::Future,
@@ -11,13 +12,13 @@ use std::{
 pub struct Timeout<F: Future>(Select<F, Sleep>);
 
 /// Creates a [`Timeout`] future which yields when either `future` yields or `timeout` passes
-pub fn timeout<F: Future>(future: F, timeout: Duration) -> crate::Result<Timeout<F>> {
+pub fn timeout<F: Future>(future: F, timeout: Duration) -> Result<Timeout<F>> {
     Timeout::new(future, timeout)
 }
 
 impl<F: Future> Timeout<F> {
     /// Creates a [`Timeout`] future which yields when either `future` yields or `timeout` passes
-    pub fn new(future: F, timeout: Duration) -> crate::Result<Self> {
+    pub fn new(future: F, timeout: Duration) -> Result<Self> {
         let inner = Select::new(future, Sleep::new(timeout)?);
 
         Ok(Timeout(inner))

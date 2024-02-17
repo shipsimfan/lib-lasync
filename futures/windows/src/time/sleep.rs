@@ -1,6 +1,6 @@
 use super::WaitableTimer;
-use crate::EventRef;
-use executor::EventManager;
+use crate::{EventRef, Result};
+use executor::{EventID, EventManager};
 use std::{
     future::Future,
     pin::Pin,
@@ -19,13 +19,27 @@ pub struct Sleep {
 }
 
 /// Sleep until `duration` has passed
-pub fn sleep(duration: Duration) -> crate::Result<Sleep> {
+pub fn sleep(duration: Duration) -> Result<Sleep> {
     Sleep::new(duration)
+}
+
+/// Polls `event_id` (assuming it is a timer event) returning [`Poll::Ready`] when it triggers
+pub(super) fn sleep_poll(event_id: EventID, cx: &mut Context) -> Poll<()> {
+    EventManager::get_local_mut(|manager| {
+        let event = manager.get_event_mut(event_id).unwrap();
+
+        if event.get_data() > 0 {
+            return Poll::Ready(());
+        }
+
+        event.set_waker(Some(cx.waker().clone()));
+        Poll::Pending
+    })
 }
 
 impl Sleep {
     /// Creates a new [`Sleep`] which yields after `duration` has passed
-    pub fn new(duration: Duration) -> crate::Result<Self> {
+    pub fn new(duration: Duration) -> Result<Self> {
         let event_id = EventRef::register()?;
 
         let mut timer = WaitableTimer::new()?;
@@ -39,15 +53,6 @@ impl Future for Sleep {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        EventManager::get_local_mut(|manager| {
-            let event = manager.get_event_mut(*self.event_id).unwrap();
-
-            if event.get_data() > 0 {
-                return Poll::Ready(());
-            }
-
-            event.set_waker(Some(cx.waker().clone()));
-            Poll::Pending
-        })
+        sleep_poll(*self.event_id, cx)
     }
 }

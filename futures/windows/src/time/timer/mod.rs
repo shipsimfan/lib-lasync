@@ -1,5 +1,5 @@
 use super::WaitableTimer;
-use crate::EventRef;
+use crate::{EventRef, Result};
 use executor::{EventID, EventManager};
 use std::time::Duration;
 
@@ -18,7 +18,7 @@ pub struct Timer {
 
 impl Timer {
     /// Creates a new [`Timer`]
-    pub fn new() -> crate::Result<Self> {
+    pub fn new() -> Result<Self> {
         let event_id = EventRef::register()?;
         let timer = WaitableTimer::new()?;
 
@@ -26,7 +26,7 @@ impl Timer {
     }
 
     /// Creates a [`TimerSleep`] future which yields after `duration`
-    pub fn sleep(&mut self, duration: Duration) -> crate::Result<TimerSleep> {
+    pub fn sleep(&mut self, duration: Duration) -> Result<TimerSleep> {
         TimerSleep::new(self, duration)
     }
 
@@ -40,11 +40,11 @@ impl Timer {
         &mut self.timer
     }
 
-    pub(self) fn cancel(&mut self) -> crate::Result<()> {
+    pub(self) fn cancel(&mut self) -> Result<()> {
         EventManager::get_local_mut(|manager| {
             manager.get_event_mut(*self.event_id).unwrap().set_data(0)
         });
 
-        todo!("Call self.timer.cancel()");
+        self.timer.cancel()
     }
 }
