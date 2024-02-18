@@ -1,5 +1,5 @@
 use super::Sleep;
-use crate::Result;
+use executor::Result;
 use futures_common::{Select, SelectResult};
 use std::{
     future::Future,

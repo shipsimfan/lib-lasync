@@ -1,5 +1,6 @@
 use super::Timer;
-use crate::{time::sleep::sleep_poll, Result};
+use crate::time::sleep::sleep_poll;
+use executor::Result;
 use std::{
     future::Future,
     pin::Pin,

@@ -1,3 +1,4 @@
+use crate::Result;
 use executor_common::{Event, EventID, List, Pollable};
 use std::num::NonZeroUsize;
 use win32::{SleepEx, INFINITE, TRUE};
@@ -15,10 +16,10 @@ pub struct SleepPoll;
 
 impl LocalEventManager {
     /// Creates a new [`LocalEventManager`] with space for at most `size` simultaneous events
-    pub fn new(size: NonZeroUsize) -> Self {
+    pub fn new(size: NonZeroUsize) -> Result<Self> {
         let events = List::new(size);
 
-        LocalEventManager { events }
+        Ok(LocalEventManager { events })
     }
 
     /// Gets the number of outstanding events

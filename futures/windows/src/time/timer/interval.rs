@@ -1,5 +1,6 @@
 use super::Timer;
-use crate::{time::interval::interval_poll, Result};
+use crate::time::interval::interval_poll;
+use executor::Result;
 use std::{future::Future, time::Duration};
 
 /// A future which yields after a fixed period

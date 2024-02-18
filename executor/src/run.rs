@@ -10,7 +10,7 @@ pub fn run(size: NonZeroUsize, future: impl Future<Output = ()> + 'static) -> Re
 
 /// Executes the tasks in the [`FutureQueue`]
 pub fn run_queue(size: NonZeroUsize, queue: FutureQueue) -> Result<()> {
-    let mut event_manager = EventManager::new(size);
+    let mut event_manager = EventManager::new(size)?;
 
     loop {
         // Drive any tasks that need to be

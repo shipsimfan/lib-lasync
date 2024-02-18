@@ -21,6 +21,7 @@ version = "0.1.0"
 dependencies = [
  "executor-common",
  "linux",
+ "uring",
 ]
 
 [[package]]
@@ -72,6 +73,11 @@ dependencies = [
 name = "linux"
 version = "0.1.0"
 source = "git+https://github.com/shipsimfan/lib-linux#4f6faf903092c73d0764acde299978579ed947b8"
+
+[[package]]
+name = "uring"
+version = "0.1.0"
+source = "git+https://github.com/shipsimfan/lib-uring#e68fbf2d80a68d835f80b0f082f285daf937534b"
 
 [[package]]
 name = "win32"

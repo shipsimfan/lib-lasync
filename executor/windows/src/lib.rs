@@ -10,4 +10,4 @@ mod manager;
 
 pub use manager::LocalEventManager;
 
-pub use win32::Result;
+pub use win32::{Error, Result};

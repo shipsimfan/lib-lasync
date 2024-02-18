@@ -1,5 +1,4 @@
-use crate::Result;
-use executor::{EventID, EventManager};
+use executor::{EventID, EventManager, Result};
 use std::ops::Deref;
 
 /// A container for an [`EventID`] which deregisters on drop

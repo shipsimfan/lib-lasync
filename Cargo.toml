@@ -26,6 +26,8 @@ futures.path = "futures"
 futures-common.path = "futures/common"
 
 linux.git = "https://github.com/shipsimfan/lib-linux"
+uring.git = "https://github.com/shipsimfan/lib-uring"
+
 win32.git = "https://github.com/shipsimfan/lib-win32"
 
 

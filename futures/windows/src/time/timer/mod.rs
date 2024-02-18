@@ -1,6 +1,6 @@
 use super::WaitableTimer;
-use crate::{EventRef, Result};
-use executor::{EventID, EventManager};
+use crate::EventRef;
+use executor::{EventID, EventManager, Result};
 use std::{future::Future, time::Duration};
 
 mod interval;

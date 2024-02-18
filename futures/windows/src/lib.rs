@@ -10,6 +10,4 @@ mod event_ref;
 
 pub mod time;
 
-pub use win32::{Error, Result};
-
 use event_ref::EventRef;

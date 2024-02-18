@@ -1,4 +1,4 @@
-use crate::platform::LocalEventManager;
+use crate::{platform::LocalEventManager, Result};
 use executor_common::Pollable;
 use std::num::NonZeroUsize;
 
@@ -17,16 +17,16 @@ impl EventManager {
     /// # Panic
     /// This function will panic if another [`EventManager`] has already been created for the
     /// current thread.
-    pub(crate) fn new(size: NonZeroUsize) -> Self {
+    pub(crate) fn new(size: NonZeroUsize) -> Result<Self> {
         tls::get_opt_mut(|manager| {
             if manager.is_some() {
                 panic!("Attempted to created a second event manager on a thread");
             }
 
-            *manager = Some(LocalEventManager::new(size));
-        });
+            *manager = Some(LocalEventManager::new(size)?);
 
-        EventManager { _priv: () }
+            Ok(EventManager { _priv: () })
+        })
     }
 
     /// Gets the [`LocalEventManager`] for the current thread

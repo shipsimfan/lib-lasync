@@ -6,9 +6,12 @@
 #![deny(rustdoc::redundant_explicit_links)]
 #![warn(rustdoc::broken_intra_doc_links)]
 
+mod io_uring;
 mod manager;
 
 pub use manager::LocalEventManager;
 
-/// The result used for Linux events
-pub use linux::Result;
+// The result used for Linux events
+pub use linux::{Error, Result};
+
+use io_uring::IOURing;

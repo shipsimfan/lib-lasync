@@ -1,5 +1,4 @@
-use crate::Result;
-use executor::{EventID, EventManager};
+use executor::{EventID, EventManager, Result};
 use std::{
     ptr::{null, null_mut},
     time::Duration,
