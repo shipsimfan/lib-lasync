@@ -11,3 +11,5 @@ publish.workspace = true
 
 [dependencies]
 executor.workspace = true
+
+linux.workspace = true
