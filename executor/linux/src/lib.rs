@@ -6,9 +6,11 @@
 #![deny(rustdoc::redundant_explicit_links)]
 #![warn(rustdoc::broken_intra_doc_links)]
 
+mod event_handler;
 mod io_uring;
 mod manager;
 
+pub use event_handler::EventHandler;
 pub use manager::LocalEventManager;
 
 // The result used for Linux events

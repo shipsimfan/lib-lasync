@@ -1,6 +1,11 @@
+use std::ptr::null_mut;
+
 use crate::Result;
 use linux::Error;
-use uring::{io_uring, io_uring_queue_exit, io_uring_queue_init};
+use uring::{
+    io_uring, io_uring_get_sqe, io_uring_queue_exit, io_uring_queue_init, io_uring_sqe,
+    io_uring_submit,
+};
 
 /// `io_uring` submission and completion queues
 pub(crate) struct IOURing {
@@ -22,6 +27,27 @@ impl IOURing {
         }
 
         Ok(IOURing { inner })
+    }
+
+    /// Attempts to get an [`io_uring_sqe`] from the ring
+    pub(crate) fn get_sqe(&mut self) -> Option<&mut io_uring_sqe> {
+        let result = unsafe { io_uring_get_sqe(&mut self.inner) };
+        if result == null_mut() {
+            None
+        } else {
+            Some(unsafe { &mut *result.cast() })
+        }
+    }
+
+    /// Submits an [`io_uring_sqe`] to poll for completion
+    #[allow(unused_variables)]
+    pub(crate) fn submit_sqe(&mut self, sqe: &mut io_uring_sqe) -> Result<()> {
+        let result = unsafe { io_uring_submit(&mut self.inner) };
+        if result < 0 {
+            Err(linux::Error::new(-result))
+        } else {
+            Ok(())
+        }
     }
 }
 

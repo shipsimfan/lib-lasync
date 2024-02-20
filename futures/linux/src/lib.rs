@@ -7,3 +7,7 @@
 #![warn(rustdoc::broken_intra_doc_links)]
 
 pub mod time;
+
+mod event_ref;
+
+use event_ref::EventRef;
