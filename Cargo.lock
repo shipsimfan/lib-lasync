@@ -74,12 +74,15 @@ dependencies = [
 [[package]]
 name = "linux"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-linux#4f6faf903092c73d0764acde299978579ed947b8"
+source = "git+https://github.com/shipsimfan/lib-linux#25bf444678c99c4b20422ef68c77c1f44715ed52"
 
 [[package]]
 name = "uring"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-uring#6468f48ad74603299c4ff2cb6fffd00066b44b93"
+source = "git+https://github.com/shipsimfan/lib-uring#4e368b22e5e30e9ae1d932b659348b75dc1c9d42"
+dependencies = [
+ "linux",
+]
 
 [[package]]
 name = "win32"

@@ -26,4 +26,9 @@ impl EventHandler {
     pub fn value(&self) -> usize {
         self.value
     }
+
+    /// Runs the event handler
+    pub(crate) fn run(&mut self, cqe: &mut io_uring_cqe) {
+        (self.handler)(cqe, &mut self.value)
+    }
 }

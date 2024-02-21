@@ -1,7 +1,7 @@
-use crate::{event_handler::EventHandler, IOURing, Result};
-use executor_common::{Event, EventID, List};
-use std::num::NonZeroUsize;
-use uring::{io_uring_sqe, io_uring_sqe_set_data64};
+use crate::{EventHandler, IOURing, Result, SQE};
+use executor_common::{Event, EventID, List, NoPoll};
+use std::{num::NonZeroUsize, ptr::null_mut};
+use uring::{io_uring_cqe_get_data64, io_uring_sqe_set_data64};
 
 /// The manager of events on a thread
 pub struct LocalEventManager {
@@ -40,22 +40,46 @@ impl LocalEventManager {
         self.events.insert(Event::new(handler))
     }
 
-    /// Gets an [`io_uring_sqe`] for I/O submission
-    pub fn get_sqe(&mut self) -> Result<&mut io_uring_sqe> {
-        self.io_uring
+    /// Gets an [`SQE`] for I/O submission
+    pub fn get_sqe(&mut self, event_id: EventID) -> Result<SQE> {
+        let sqe = self
+            .io_uring
             .get_sqe()
-            .ok_or(linux::Error::new(linux::errno::ENOSPC))
-    }
+            .ok_or(linux::Error::new(linux::errno::ENOSPC))?;
 
-    /// Submits an [`io_uring_sqe`] to be polled for completion
-    pub fn submit_sqe(&mut self, sqe: &mut io_uring_sqe, event_id: EventID) -> Result<()> {
         unsafe { io_uring_sqe_set_data64(sqe, event_id.into_u64()) };
 
-        self.io_uring.submit_sqe(sqe)
+        Ok(SQE::new(sqe, &mut self.io_uring))
+    }
+
+    /// Deregisters an event based on its [`EventID`]
+    pub fn deregister(&mut self, event_id: EventID) {
+        self.events.remove(event_id);
     }
 
     /// Sleeps until an event is triggered
-    pub fn poll(&mut self) {
-        todo!("poll");
+    pub fn poll(&mut self) -> Result<NoPoll<crate::Error>> {
+        let mut cqe = null_mut();
+
+        loop {
+            self.io_uring.wait(&mut cqe)?;
+
+            let user_data = unsafe { io_uring_cqe_get_data64(cqe) };
+            let event_id = unsafe { EventID::from_u64(user_data) };
+
+            match self.events.get_mut(event_id) {
+                Some(event) => {
+                    event.data_mut().run(unsafe { &mut *cqe });
+                    event.wake()
+                }
+                None => {}
+            }
+
+            self.io_uring.seen(cqe);
+
+            if self.io_uring.available_events() == 0 {
+                return Ok(NoPoll::new());
+            }
+        }
     }
 }

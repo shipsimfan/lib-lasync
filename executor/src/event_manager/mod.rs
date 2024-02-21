@@ -45,9 +45,9 @@ impl EventManager {
     }
 
     /// Waits for an event to be triggered
-    pub(crate) fn poll(&mut self) {
-        let poll = tls::get_mut(|manager| manager.poll());
-        poll.poll();
+    pub(crate) fn poll(&mut self) -> Result<()> {
+        let poll = tls::get_mut(|manager| manager.poll())?;
+        poll.poll()
     }
 }
 

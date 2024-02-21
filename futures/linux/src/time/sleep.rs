@@ -1,23 +1,23 @@
-use super::TimerFD;
 use crate::EventRef;
-use executor::{EventID, EventManager, Result};
+use executor::{platform::EventHandler, EventID, EventManager, Result};
+use linux::time::__kernel_timespec;
 use std::{
     future::Future,
     pin::Pin,
     task::{Context, Poll},
     time::Duration,
 };
+use uring::{io_uring_cqe, io_uring_prep_timeout};
 
 /// A future which yields after a certain duration
 pub struct Sleep {
-    /// The timer that will fire when the sleep ends
-    #[allow(unused)]
-    timer: TimerFD,
+    /// The timespec for the SQE
+    timespec: __kernel_timespec,
 
     /// The event id this is registered under
     event_id: EventRef,
 
-    /// Has the [`io_uring_sqe`] been submitted yet?
+    /// Has the SQE been submitted yet?
     sqe_submitted: bool,
 }
 
@@ -26,37 +26,33 @@ pub fn sleep(duration: Duration) -> Result<Sleep> {
     Sleep::new(duration)
 }
 
+/// The callback called when the sleep timer fires
+fn sleep_callback(_: &mut io_uring_cqe, value: &mut usize) {
+    *value += 1;
+}
+
 impl Sleep {
     /// Creates a new [`Sleep`] which yields after `duration` has passed
     pub fn new(duration: Duration) -> Result<Self> {
-        let event_id = EventRef::register(TimerFD::HANDLER)?;
+        let event_id = EventRef::register(EventHandler::new(0, sleep_callback))?;
 
-        let mut timer = TimerFD::new()?;
-        timer.set(duration, None)?;
+        let timespec = __kernel_timespec {
+            sec: duration.as_secs() as _,
+            nsec: duration.subsec_nanos() as _,
+        };
 
         Ok(Sleep {
-            timer,
+            timespec,
             event_id,
             sqe_submitted: false,
         })
     }
 
-    /// Submits the sqe for this event
-    fn submit_sqe(self: Pin<&mut Self>) -> Result<()> {
-        let (timer, sqe_submitted, event_id) = self.project();
-        assert!(!*sqe_submitted);
-
-        timer.submit_sqe(event_id)?;
-
-        *sqe_submitted = true;
-        Ok(())
-    }
-
-    /// Projects this to `(self.timer, self.sqe_submitted, self.event_id)`
-    fn project(self: Pin<&mut Self>) -> (Pin<&mut TimerFD>, &mut bool, EventID) {
+    /// Projects this object into `(self.timespec, self.sqe_submitted, self.event_id)`
+    fn project(self: Pin<&mut Self>) -> (Pin<&mut __kernel_timespec>, &mut bool, EventID) {
         let this = unsafe { self.get_unchecked_mut() };
         (
-            Pin::new(&mut this.timer),
+            Pin::new(&mut this.timespec),
             &mut this.sqe_submitted,
             *this.event_id,
         )
@@ -66,14 +62,22 @@ impl Sleep {
 impl Future for Sleep {
     type Output = ();
 
-    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        if !self.sqe_submitted {
-            self.as_mut().submit_sqe().unwrap();
-        }
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let (timespec, sqe_submitted, event_id) = self.project();
 
         EventManager::get_local_mut(|manager| {
-            let event = manager.get_event_mut(*self.event_id).unwrap();
+            // Submit the SQE if one hasn't been submitted yet
+            if !*sqe_submitted {
+                let sqe = manager.get_sqe(event_id).unwrap();
 
+                unsafe { io_uring_prep_timeout(sqe.as_ptr(), timespec.get_mut(), 0, 0) };
+
+                sqe.submit().unwrap();
+                *sqe_submitted = true;
+            }
+
+            // Check if the event is ready
+            let event = manager.get_event_mut(event_id).unwrap();
             if event.get_data().value() > 0 {
                 return Poll::Ready(());
             }

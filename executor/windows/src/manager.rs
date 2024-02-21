@@ -52,13 +52,16 @@ impl LocalEventManager {
     /// This function returns a [`SleepPoll`] because the event manager's [`RefCell`] cannot be
     /// held. This is because the individual APCs will call the wakers through this event manager
     /// during the poll.
-    pub fn poll(&mut self) -> SleepPoll {
-        SleepPoll
+    pub fn poll(&mut self) -> Result<SleepPoll> {
+        Ok(SleepPoll)
     }
 }
 
 impl Pollable for SleepPoll {
-    fn poll(&self) {
+    type Error = crate::Error;
+
+    fn poll(&self) -> Result<()> {
         unsafe { SleepEx(INFINITE, TRUE) };
+        Ok(())
     }
 }

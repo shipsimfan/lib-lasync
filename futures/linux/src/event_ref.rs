@@ -23,6 +23,6 @@ impl Deref for EventRef {
 
 impl Drop for EventRef {
     fn drop(&mut self) {
-        todo!("EventRef::drop()");
+        EventManager::get_local_mut(|manager| manager.deregister(self.0));
     }
 }

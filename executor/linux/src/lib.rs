@@ -9,9 +9,11 @@
 mod event_handler;
 mod io_uring;
 mod manager;
+mod sqe;
 
 pub use event_handler::EventHandler;
 pub use manager::LocalEventManager;
+pub use sqe::SQE;
 
 // The result used for Linux events
 pub use linux::{Error, Result};

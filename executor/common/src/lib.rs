@@ -14,4 +14,4 @@ mod pollable;
 pub use event::Event;
 pub use event_id::EventID;
 pub use list::List;
-pub use pollable::Pollable;
+pub use pollable::{NoPoll, Pollable};

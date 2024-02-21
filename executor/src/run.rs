@@ -35,6 +35,6 @@ pub fn run_queue(size: NonZeroUsize, queue: FutureQueue) -> Result<()> {
         }
 
         // Wait for events as there are no more tasks to perform
-        event_manager.poll();
+        event_manager.poll()?;
     }
 }
