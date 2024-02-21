@@ -27,6 +27,11 @@ impl EventHandler {
         self.value
     }
 
+    /// Sets the value associated with the event
+    pub fn set_value(&mut self, value: usize) {
+        self.value = value;
+    }
+
     /// Runs the event handler
     pub(crate) fn run(&mut self, cqe: &mut io_uring_cqe) {
         (self.handler)(cqe, &mut self.value)
