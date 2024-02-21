@@ -19,6 +19,9 @@ pub struct Sleep {
 
     /// Has the SQE been submitted yet?
     sqe_submitted: bool,
+
+    /// Has the sleep completed?
+    completed: bool,
 }
 
 /// Sleep until `duration` has passed
@@ -45,15 +48,19 @@ impl Sleep {
             timespec,
             event_id,
             sqe_submitted: false,
+            completed: false,
         })
     }
 
-    /// Projects this object into `(self.timespec, self.sqe_submitted, self.event_id)`
-    fn project(self: Pin<&mut Self>) -> (Pin<&mut __kernel_timespec>, &mut bool, EventID) {
+    /// Projects this object into `(self.timespec, self.sqe_submitted, self.completed, self.event_id)`
+    fn project(
+        self: Pin<&mut Self>,
+    ) -> (Pin<&mut __kernel_timespec>, &mut bool, &mut bool, EventID) {
         let this = unsafe { self.get_unchecked_mut() };
         (
             Pin::new(&mut this.timespec),
             &mut this.sqe_submitted,
+            &mut this.completed,
             *this.event_id,
         )
     }
@@ -63,7 +70,7 @@ impl Future for Sleep {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let (timespec, sqe_submitted, event_id) = self.project();
+        let (timespec, sqe_submitted, completed, event_id) = self.project();
 
         EventManager::get_local_mut(|manager| {
             // Submit the SQE if one hasn't been submitted yet
@@ -79,11 +86,20 @@ impl Future for Sleep {
             // Check if the event is ready
             let event = manager.get_event_mut(event_id).unwrap();
             if event.get_data().value() > 0 {
+                *completed = true;
                 return Poll::Ready(());
             }
 
             event.set_waker(Some(cx.waker().clone()));
             Poll::Pending
         })
+    }
+}
+
+impl Drop for Sleep {
+    fn drop(&mut self) {
+        if self.sqe_submitted && !self.completed {
+            todo!("io_uring_prep_timeout_remove");
+        }
     }
 }
