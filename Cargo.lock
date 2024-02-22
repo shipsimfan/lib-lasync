@@ -50,6 +50,7 @@ name = "futures-linux"
 version = "0.1.0"
 dependencies = [
  "executor",
+ "futures-common",
  "linux",
  "uring",
 ]
