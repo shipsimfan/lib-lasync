@@ -11,9 +11,9 @@ pub struct TimerTick<'a, 'b: 'a>(&'a mut TimerInterval<'b>);
 
 impl<'a> TimerInterval<'a> {
     /// Creates a new [`TimerInterval`]
-    pub(super) fn new(timer: &'a mut Timer, delay: Duration, period: Duration) -> Result<Self> {
+    pub(super) fn new(timer: &'a mut Timer, period: Duration) -> Result<Self> {
         let event_id = timer.event_id();
-        timer.timer().set(delay, Some(period), event_id)?;
+        timer.timer().set(period, Some(period), event_id)?;
 
         Ok(TimerInterval(timer))
     }

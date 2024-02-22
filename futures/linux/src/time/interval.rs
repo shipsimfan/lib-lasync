@@ -26,12 +26,7 @@ pub struct Tick<'a>(&'a mut Interval);
 
 /// Creates an [`Interval`] future which yields immediately then yields every `period`
 pub fn interval(period: Duration) -> Result<Interval> {
-    Interval::new(Duration::ZERO, period)
-}
-
-/// Creates an [`Interval`] future which first yields after `delay` then yields every `period`
-pub fn interval_with_delay(delay: Duration, period: Duration) -> Result<Interval> {
-    Interval::new(delay, period)
+    Interval::new(period)
 }
 
 /// The callback called when the interval timer fires
@@ -41,9 +36,7 @@ fn interval_callback(_: &mut io_uring_cqe, value: &mut usize) {
 
 impl Interval {
     /// Creates a new [`Interval`] that first yields after `delay` and then yields every `period`
-    pub fn new(delay: Duration, period: Duration) -> Result<Self> {
-        assert_eq!(delay, Duration::ZERO, "Delay is currently not supported!");
-
+    pub fn new(period: Duration) -> Result<Self> {
         let event_id = EventRef::register(EventHandler::new(0, interval_callback))?;
 
         let timespec = __kernel_timespec {

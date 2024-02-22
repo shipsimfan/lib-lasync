@@ -3,5 +3,5 @@
 mod interval;
 mod sleep;
 
-pub use interval::{interval, interval_with_delay, Interval};
+pub use interval::{interval, Interval};
 pub use sleep::{sleep, Sleep};

@@ -21,14 +21,9 @@ pub struct Interval {
 /// A future which yields after one tick from an [`Interval`]
 pub struct Tick<'a>(&'a mut Interval);
 
-/// Creates an [`Interval`] future which yields immediately then yields every `period`
+/// Creates an [`Interval`] future which yields every `period`
 pub fn interval(period: Duration) -> Result<Interval> {
-    interval_with_delay(Duration::ZERO, period)
-}
-
-/// Creates an [`Interval`] future which first yields after `delay` then yields every `period`
-pub fn interval_with_delay(delay: Duration, period: Duration) -> Result<Interval> {
-    Interval::new(delay, period)
+    Interval::new(period)
 }
 
 /// Polls `event_id` (assuming it is a timer event) returning [`Poll::Ready`] and decrementing the
@@ -48,12 +43,12 @@ pub(super) fn interval_poll(event_id: EventID, cx: &mut Context<'_>) -> Poll<()>
 }
 
 impl Interval {
-    /// Creates a new [`Interval`] that first yields after `delay` and then yields every `period`
-    pub fn new(delay: Duration, period: Duration) -> Result<Self> {
+    /// Creates a new [`Interval`] that yields every `period`
+    pub fn new(period: Duration) -> Result<Self> {
         let event_id = EventRef::register()?;
 
         let mut timer = WaitableTimer::new()?;
-        timer.set(delay, Some(period), *event_id)?;
+        timer.set(period, Some(period), *event_id)?;
 
         Ok(Interval { timer, event_id })
     }

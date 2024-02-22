@@ -36,17 +36,7 @@ impl Timer {
 
     /// Creates an [`TimerInterval`] future which yields immediately then yields every `period`
     pub fn interval(&mut self, period: Duration) -> Result<TimerInterval> {
-        self.interval_with_delay(Duration::ZERO, period)
-    }
-
-    /// Creates an [`TimerInterval`] future which first yields after `delay` then yields every
-    /// `period`
-    pub fn interval_with_delay(
-        &mut self,
-        delay: Duration,
-        period: Duration,
-    ) -> Result<TimerInterval> {
-        TimerInterval::new(self, delay, period)
+        TimerInterval::new(self, period)
     }
 
     /// Creates a [`TimerTimeout`] future which yields when either `future` yields or `timeout`
