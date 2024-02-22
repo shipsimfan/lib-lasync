@@ -1,5 +1,5 @@
 use crate::EventRef;
-use executor::{platform::EventHandler, EventID, EventManager, Result};
+use executor::{platform::EventHandler, EventManager, Result};
 use linux::time::__kernel_timespec;
 use std::{
     future::Future,
@@ -7,7 +7,9 @@ use std::{
     task::{Context, Poll},
     time::Duration,
 };
-use uring::{io_uring_cqe, io_uring_prep_timeout};
+use uring::{
+    io_uring_cqe, io_uring_prep_timeout, io_uring_prep_timeout_remove, IORING_TIMEOUT_MULTISHOT,
+};
 
 /// A future which yields after a fixed period
 pub struct Interval {
@@ -22,7 +24,10 @@ pub struct Interval {
 }
 
 /// A future which yields after one tick from an [`Interval`]
-pub struct Tick<'a>(&'a mut Interval);
+pub struct Tick<'a> {
+    timespec: __kernel_timespec,
+    interval: &'a mut Interval,
+}
 
 /// Creates an [`Interval`] future which yields immediately then yields every `period`
 pub fn interval(period: Duration) -> Result<Interval> {
@@ -53,25 +58,17 @@ impl Interval {
 
     /// Returns a future which will yield after the next timer tick
     pub fn tick(&mut self) -> Tick {
-        Tick(self)
-    }
-
-    /// Projects this object into `(self.timespec, self.sqe_submitted, self.event_id)`
-    pub(self) fn project(
-        self: Pin<&mut Self>,
-    ) -> (Pin<&mut __kernel_timespec>, &mut bool, EventID) {
-        let this = unsafe { self.get_unchecked_mut() };
-        (
-            Pin::new(&mut this.timespec),
-            &mut this.sqe_submitted,
-            *this.event_id,
-        )
+        Tick {
+            timespec: self.timespec,
+            interval: self,
+        }
     }
 }
 
 impl<'a> Tick<'a> {
-    fn project(self: Pin<&mut Self>) -> Pin<&mut Interval> {
-        Pin::new(&mut self.get_mut().0)
+    fn project(self: Pin<&mut Self>) -> (Pin<&mut __kernel_timespec>, &mut Interval) {
+        let this = unsafe { self.get_unchecked_mut() };
+        (Pin::new(&mut this.timespec), this.interval)
     }
 }
 
@@ -79,28 +76,28 @@ impl<'a> Future for Tick<'a> {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let (timespec, sqe_submitted, event_id) = self.project().project();
+        let (timespec, interval) = self.project();
 
         EventManager::get_local_mut(|manager| {
             // Submit the SQE if one hasn't been submitted yet
-            if !*sqe_submitted {
-                let sqe = manager.get_sqe(event_id).unwrap();
+            if !interval.sqe_submitted {
+                let sqe = manager.get_sqe(*interval.event_id).unwrap();
 
                 unsafe {
                     io_uring_prep_timeout(
                         sqe.as_ptr(),
                         timespec.get_mut(),
                         0,
-                        todo!("IORING_TIMEOUT_MULTISHOT"),
+                        IORING_TIMEOUT_MULTISHOT,
                     )
                 };
 
                 sqe.submit().unwrap();
-                *sqe_submitted = true;
+                interval.sqe_submitted = true;
             }
 
             // Check if the event is ready
-            let event = manager.get_event_mut(event_id).unwrap();
+            let event = manager.get_event_mut(*interval.event_id).unwrap();
             let value = event.get_data().value();
             if value > 0 {
                 event.data_mut().set_value(value - 1);
@@ -115,6 +112,12 @@ impl<'a> Future for Tick<'a> {
 
 impl Drop for Interval {
     fn drop(&mut self) {
-        todo!("io_uring_prep_timeout_remove");
+        EventManager::get_local_mut(|manager| {
+            let sqe = manager.get_sqe(*self.event_id).unwrap();
+
+            unsafe { io_uring_prep_timeout_remove(sqe.as_ptr(), (*self.event_id).into_u64(), 0) };
+
+            sqe.submit().unwrap();
+        })
     }
 }

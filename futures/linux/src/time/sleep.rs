@@ -7,7 +7,7 @@ use std::{
     task::{Context, Poll},
     time::Duration,
 };
-use uring::{io_uring_cqe, io_uring_prep_timeout};
+use uring::{io_uring_cqe, io_uring_prep_timeout, io_uring_prep_timeout_remove};
 
 /// A future which yields after a certain duration
 pub struct Sleep {
@@ -99,7 +99,15 @@ impl Future for Sleep {
 impl Drop for Sleep {
     fn drop(&mut self) {
         if self.sqe_submitted && !self.completed {
-            todo!("io_uring_prep_timeout_remove");
+            EventManager::get_local_mut(|manager| {
+                let sqe = manager.get_sqe(*self.event_id).unwrap();
+
+                unsafe {
+                    io_uring_prep_timeout_remove(sqe.as_ptr(), (*self.event_id).into_u64(), 0)
+                };
+
+                sqe.submit().unwrap();
+            })
         }
     }
 }
