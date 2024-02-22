@@ -66,8 +66,13 @@ impl Interval {
 }
 
 impl<'a> Tick<'a> {
-    fn project(self: Pin<&mut Self>) -> (Pin<&mut __kernel_timespec>, &mut Interval) {
-        let this = unsafe { self.get_unchecked_mut() };
+    /// Projects this into `(self.timespec, self.interval)`
+    ///
+    /// # SAFTEY
+    /// This is the only way to access the contained [`__kernel_timespec`], do not acces it
+    /// directly.
+    unsafe fn project(self: Pin<&mut Self>) -> (Pin<&mut __kernel_timespec>, &mut Interval) {
+        let this = self.get_unchecked_mut();
         (Pin::new(&mut this.timespec), this.interval)
     }
 }
@@ -76,7 +81,7 @@ impl<'a> Future for Tick<'a> {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let (timespec, interval) = self.project();
+        let (timespec, interval) = unsafe { self.project() };
 
         EventManager::get_local_mut(|manager| {
             // Submit the SQE if one hasn't been submitted yet

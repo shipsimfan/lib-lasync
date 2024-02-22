@@ -52,11 +52,16 @@ impl Sleep {
         })
     }
 
-    /// Projects this object into `(self.timespec, self.sqe_submitted, self.completed, self.event_id)`
-    fn project(
+    /// Projects this object into
+    /// `(self.timespec, self.sqe_submitted, self.completed, self.event_id)`
+    ///
+    /// # SAFTEY
+    /// This is the only way to access the contained [`__kernel_timespec`], do not acces it
+    /// directly.
+    unsafe fn project(
         self: Pin<&mut Self>,
     ) -> (Pin<&mut __kernel_timespec>, &mut bool, &mut bool, EventID) {
-        let this = unsafe { self.get_unchecked_mut() };
+        let this = self.get_unchecked_mut();
         (
             Pin::new(&mut this.timespec),
             &mut this.sqe_submitted,
@@ -70,7 +75,7 @@ impl Future for Sleep {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let (timespec, sqe_submitted, completed, event_id) = self.project();
+        let (timespec, sqe_submitted, completed, event_id) = unsafe { self.project() };
 
         EventManager::get_local_mut(|manager| {
             // Submit the SQE if one hasn't been submitted yet
