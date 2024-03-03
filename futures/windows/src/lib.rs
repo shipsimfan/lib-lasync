@@ -8,6 +8,7 @@
 
 mod event_ref;
 
+pub mod net;
 pub mod time;
 
 use event_ref::EventRef;
