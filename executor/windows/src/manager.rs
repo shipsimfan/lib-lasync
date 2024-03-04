@@ -1,7 +1,10 @@
-use crate::Result;
+use crate::{Error, Result};
 use executor_common::{Event, EventID, List, Pollable};
 use std::num::NonZeroUsize;
-use win32::{SleepEx, INFINITE, TRUE};
+use win32::{
+    winsock2::{WSACleanup, WSAStartup, WSADATA},
+    SleepEx, INFINITE, TRUE,
+};
 
 /// The manager of events on a thread
 pub struct LocalEventManager {
@@ -17,6 +20,12 @@ pub struct SleepPoll;
 impl LocalEventManager {
     /// Creates a new [`LocalEventManager`] with space for at most `size` simultaneous events
     pub fn new(size: NonZeroUsize) -> Result<Self> {
+        let mut wsa_data = WSADATA::default();
+        let result = unsafe { WSAStartup((2 << 8) | 2, &mut wsa_data) };
+        if result != 0 {
+            return Err(Error::new_win32(result as _));
+        }
+
         let events = List::new(size);
 
         Ok(LocalEventManager { events })
@@ -54,6 +63,12 @@ impl LocalEventManager {
     /// during the poll.
     pub fn poll(&mut self) -> Result<SleepPoll> {
         Ok(SleepPoll)
+    }
+}
+
+impl Drop for LocalEventManager {
+    fn drop(&mut self) {
+        unsafe { WSACleanup() };
     }
 }
 
