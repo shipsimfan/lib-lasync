@@ -7,7 +7,10 @@
 #![warn(rustdoc::broken_intra_doc_links)]
 
 mod manager;
+mod objects;
 
 pub use manager::LocalEventManager;
 
 pub use win32::{Error, Result};
+
+use objects::{Objects, WaitResult};

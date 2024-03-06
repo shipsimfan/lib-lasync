@@ -1,6 +1,6 @@
-use crate::{Error, Result};
+use crate::{Error, Objects, Result, WaitResult};
 use executor_common::{Event, EventID, List, Pollable};
-use std::num::NonZeroUsize;
+use std::{cell::RefCell, num::NonZeroUsize, rc::Rc};
 use win32::{
     winsock2::{WSACleanup, WSAStartup, WSADATA},
     SleepEx, INFINITE, TRUE,
@@ -9,13 +9,14 @@ use win32::{
 /// The manager of events on a thread
 pub struct LocalEventManager {
     events: List<Event<usize>>,
+    objects: Rc<RefCell<Objects>>,
 }
 
 /// Allows calling [`SleepEx`] while not holding the reference to the [`LocalEventManager`].
 ///
 /// This is required because the APCs for events run during the call to [`SleepEx`] and directly
 /// wake the events. If the [`LocalEventManager`] was held, the program would panic.
-pub struct SleepPoll;
+pub struct SleepPoll(Rc<RefCell<Objects>>);
 
 impl LocalEventManager {
     /// Creates a new [`LocalEventManager`] with space for at most `size` simultaneous events
@@ -27,8 +28,9 @@ impl LocalEventManager {
         }
 
         let events = List::new(size);
+        let objects = Rc::new(RefCell::new(Objects::new()));
 
-        Ok(LocalEventManager { events })
+        Ok(LocalEventManager { events, objects })
     }
 
     /// Gets the number of outstanding events
@@ -62,7 +64,7 @@ impl LocalEventManager {
     /// held. This is because the individual APCs will call the wakers through this event manager
     /// during the poll.
     pub fn poll(&mut self) -> Result<SleepPoll> {
-        Ok(SleepPoll)
+        Ok(SleepPoll(self.objects.clone()))
     }
 }
 
@@ -76,7 +78,30 @@ impl Pollable for SleepPoll {
     type Error = crate::Error;
 
     fn poll(&self) -> Result<()> {
-        unsafe { SleepEx(INFINITE, TRUE) };
+        let mut objects = self.0.borrow_mut();
+
+        if objects.count() == 0 {
+            unsafe { SleepEx(INFINITE, TRUE) };
+            return Ok(());
+        }
+
+        let mut timeout = INFINITE;
+        while objects.count() > 0 {
+            let event_id = match objects.wait(timeout)? {
+                WaitResult::Timeout => break,
+                WaitResult::IOCompletion => {
+                    timeout = 0;
+                    continue;
+                }
+                WaitResult::Object(event_id) => {
+                    timeout = 0;
+                    event_id
+                }
+            };
+
+            todo!("Somehow wake the event...");
+        }
+
         Ok(())
     }
 }
