@@ -1,32 +1,31 @@
-use crate::net::socket_address::SocketAddress;
-use executor::{Error, Result};
+use super::{Socket, SocketAddress};
+use crate::Win32Event;
+use executor::Result;
 use std::net::SocketAddr;
-use win32::{
-    try_wsa_get_last_error,
-    winsock2::{bind, closesocket, socket, INVALID_SOCKET, SOCKET, SOCK_STREAM},
-};
+use win32::winsock2::{FD_ACCEPT, SOCK_STREAM, SOMAXCONN};
 
 /// A listening socket for TCP connection
-pub struct TCPListener(SOCKET);
+pub struct TCPListener {
+    socket: Socket,
+    accept_event: Win32Event,
+}
 
 impl TCPListener {
     /// Creates a new [`TCPListener`] bound to `addr`
     pub fn bind(addr: SocketAddr) -> Result<Self> {
         let sockaddr: SocketAddress = addr.into();
 
-        let socket = unsafe { socket(sockaddr.family() as _, SOCK_STREAM, 0) };
-        if socket == INVALID_SOCKET {
-            return Err(Error::wsa_get_last_error());
-        }
+        let mut socket = Socket::new(sockaddr.family() as _, SOCK_STREAM)?;
+        socket.bind(sockaddr)?;
+        socket.listen(SOMAXCONN)?;
+        socket.set_non_blocking()?;
 
-        try_wsa_get_last_error!(unsafe { bind(socket, sockaddr.as_ptr(), sockaddr.namelen()) })?;
+        let mut accept_event = Win32Event::new()?;
+        unsafe { socket.event_select(&mut accept_event, FD_ACCEPT as _) }?;
 
-        Ok(TCPListener(socket))
-    }
-}
-
-impl Drop for TCPListener {
-    fn drop(&mut self) {
-        unsafe { closesocket(self.0) };
+        Ok(TCPListener {
+            socket,
+            accept_event,
+        })
     }
 }
