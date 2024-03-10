@@ -23,15 +23,17 @@ pub(super) struct WaitableTimer {
 extern "system" fn timer_apc(event_id: LPVOID, _: DWORD, _: DWORD) {
     let event_id = unsafe { EventID::from_u64(event_id as u64) };
 
-    EventManager::get_local_mut(|manager| {
-        let event = match manager.get_event_mut(event_id) {
-            Some(event) => event,
-            None => return,
-        };
+    unsafe {
+        EventManager::get_unchecked_mut(|manager| {
+            let event = match manager.get_event_mut(event_id) {
+                Some(event) => event,
+                None => return,
+            };
 
-        *event.data_mut() += 1;
-        event.wake();
-    });
+            *event.data_mut() += 1;
+            event.wake();
+        });
+    }
 }
 
 impl WaitableTimer {

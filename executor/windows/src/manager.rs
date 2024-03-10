@@ -1,6 +1,6 @@
 use crate::{Error, Objects, Result, WaitResult};
-use executor_common::{Event, EventID, List, Pollable};
-use std::{cell::RefCell, num::NonZeroUsize, rc::Rc};
+use executor_common::{Event, EventID, List};
+use std::num::NonZeroUsize;
 use win32::{
     winsock2::{WSACleanup, WSAStartup, WSADATA},
     SleepEx, INFINITE, TRUE,
@@ -9,14 +9,8 @@ use win32::{
 /// The manager of events on a thread
 pub struct LocalEventManager {
     events: List<Event<usize>>,
-    objects: Rc<RefCell<Objects>>,
+    objects: Objects,
 }
-
-/// Allows calling [`SleepEx`] while not holding the reference to the [`LocalEventManager`].
-///
-/// This is required because the APCs for events run during the call to [`SleepEx`] and directly
-/// wake the events. If the [`LocalEventManager`] was held, the program would panic.
-pub struct SleepPoll(Rc<RefCell<Objects>>);
 
 impl LocalEventManager {
     /// Creates a new [`LocalEventManager`] with space for at most `size` simultaneous events
@@ -28,7 +22,7 @@ impl LocalEventManager {
         }
 
         let events = List::new(size);
-        let objects = Rc::new(RefCell::new(Objects::new()));
+        let objects = Objects::new();
 
         Ok(LocalEventManager { events, objects })
     }
@@ -58,36 +52,16 @@ impl LocalEventManager {
         self.events.remove(event_id);
     }
 
-    /// Sleeps until an event is triggered
-    ///
-    /// This function returns a [`SleepPoll`] because the event manager's [`RefCell`] cannot be
-    /// held. This is because the individual APCs will call the wakers through this event manager
-    /// during the poll.
-    pub fn poll(&mut self) -> Result<SleepPoll> {
-        Ok(SleepPoll(self.objects.clone()))
-    }
-}
-
-impl Drop for LocalEventManager {
-    fn drop(&mut self) {
-        unsafe { WSACleanup() };
-    }
-}
-
-impl Pollable for SleepPoll {
-    type Error = crate::Error;
-
-    fn poll(&self) -> Result<()> {
-        let mut objects = self.0.borrow_mut();
-
-        if objects.count() == 0 {
+    /// Sleeps until an event is triggered and wake all triggered events
+    pub fn poll(&mut self) -> Result<()> {
+        if self.objects.count() == 0 {
             unsafe { SleepEx(INFINITE, TRUE) };
             return Ok(());
         }
 
         let mut timeout = INFINITE;
-        while objects.count() > 0 {
-            let event_id = match objects.wait(timeout)? {
+        while self.objects.count() > 0 {
+            let event_id = match self.objects.wait(timeout)? {
                 WaitResult::Timeout => break,
                 WaitResult::IOCompletion => {
                     timeout = 0;
@@ -99,9 +73,15 @@ impl Pollable for SleepPoll {
                 }
             };
 
-            todo!("Somehow wake the event...");
+            self.events.get_mut(event_id).map(|event| event.wake());
         }
 
         Ok(())
+    }
+}
+
+impl Drop for LocalEventManager {
+    fn drop(&mut self) {
+        unsafe { WSACleanup() };
     }
 }

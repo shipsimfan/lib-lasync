@@ -37,3 +37,18 @@ pub(super) fn get<T, F: FnOnce(&LocalEventManager) -> T>(f: F) -> T {
 pub(super) fn get_mut<T, F: FnOnce(&mut LocalEventManager) -> T>(f: F) -> T {
     get_opt_mut(|manager| f(manager.as_mut().unwrap()))
 }
+
+/// Gets the [`LocalEventManager`] for the current thread mutably without checking borrow counts
+///
+/// # Saftey
+/// This must only be used where it can be garunteed that there will not be multiple concurrent
+/// mutable references to the event manager
+///
+/// # Panic
+/// This function will panic if the local event manager has not been set
+pub(super) unsafe fn get_unchecked_mut<T, F: FnOnce(&mut LocalEventManager) -> T>(f: F) -> T {
+    LOCAL_EVENT_MANAGER.with(|manager: &RefCell<Option<LocalEventManager>>| {
+        let manager = unsafe { &mut *manager.as_ptr() };
+        f(manager.as_mut().unwrap())
+    })
+}

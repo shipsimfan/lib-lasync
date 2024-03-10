@@ -9,9 +9,7 @@
 mod event;
 mod event_id;
 mod list;
-mod pollable;
 
 pub use event::Event;
 pub use event_id::EventID;
 pub use list::List;
-pub use pollable::{NoPoll, Pollable};

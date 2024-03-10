@@ -1,5 +1,4 @@
 use crate::{platform::LocalEventManager, Result};
-use executor_common::Pollable;
 use std::num::NonZeroUsize;
 
 mod tls;
@@ -39,6 +38,15 @@ impl EventManager {
         tls::get_mut(f)
     }
 
+    /// Gets the [`LocalEventManager`] for the current thread mutably without checking borrow counts
+    ///
+    /// # Saftey
+    /// This must only be used where it can be garunteed that there will not be multiple concurrent
+    /// mutable references to the event manager
+    pub unsafe fn get_unchecked_mut<T, F: FnOnce(&mut LocalEventManager) -> T>(f: F) -> T {
+        tls::get_unchecked_mut(f)
+    }
+
     /// Gets the number of outstanding events
     pub(crate) fn len(&self) -> usize {
         tls::get(|manager| manager.len())
@@ -46,8 +54,7 @@ impl EventManager {
 
     /// Waits for an event to be triggered
     pub(crate) fn poll(&mut self) -> Result<()> {
-        let poll = tls::get_mut(|manager| manager.poll())?;
-        poll.poll()
+        tls::get_mut(|manager| manager.poll())
     }
 }
 
