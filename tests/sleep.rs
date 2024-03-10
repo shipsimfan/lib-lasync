@@ -1,9 +1,14 @@
-use std::{num::NonZeroUsize, time::Duration};
+use std::{
+    num::NonZeroUsize,
+    time::{Duration, Instant},
+};
 
 const SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(32) };
 
 #[test]
 fn one_timer() {
+    let start = Instant::now();
+
     lasync::executor::run(SIZE, async {
         println!("Hello");
 
@@ -14,6 +19,10 @@ fn one_timer() {
         println!("World!");
     })
     .unwrap();
+
+    let end = Instant::now();
+    let duration = end.duration_since(start);
+    assert!(duration.as_secs_f64() >= 1.);
 }
 
 #[test]
@@ -46,5 +55,11 @@ fn two_timers() {
         println!("Task 2 - End");
     });
 
+    let start = Instant::now();
+
     lasync::executor::run_queue(SIZE, queue).unwrap();
+
+    let end = Instant::now();
+    let duration = end.duration_since(start);
+    assert!(duration.as_secs_f64() >= 2.);
 }
