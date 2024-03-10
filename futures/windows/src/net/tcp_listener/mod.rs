@@ -4,6 +4,10 @@ use executor::Result;
 use std::net::SocketAddr;
 use win32::winsock2::{FD_ACCEPT, SOCK_STREAM, SOMAXCONN};
 
+mod accept;
+
+pub use accept::Accept;
+
 /// A listening socket for TCP connection
 pub struct TCPListener {
     socket: Socket,
@@ -27,5 +31,10 @@ impl TCPListener {
             socket,
             accept_event,
         })
+    }
+
+    /// Returns a future which yields when a new client connects to this socket
+    pub fn accept(&mut self) -> Result<Accept> {
+        Accept::new(self)
     }
 }

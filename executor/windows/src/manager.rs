@@ -3,7 +3,7 @@ use executor_common::{Event, EventID, List};
 use std::num::NonZeroUsize;
 use win32::{
     winsock2::{WSACleanup, WSAStartup, WSADATA},
-    SleepEx, INFINITE, TRUE,
+    SleepEx, HANDLE, INFINITE, TRUE,
 };
 
 /// The manager of events on a thread
@@ -40,6 +40,21 @@ impl LocalEventManager {
     /// Registers a new event, returning the [`EventID`] if there is enough room
     pub fn register(&mut self, initial_value: usize) -> Option<EventID> {
         self.events.insert(Event::new(initial_value))
+    }
+
+    /// Registers a new event with a waitable [`HANDLE`], returning the [`EventID`] if there is
+    /// enough room
+    pub fn register_handle(
+        &mut self,
+        initial_value: usize,
+        handle: HANDLE,
+    ) -> Result<Option<EventID>> {
+        let id = match self.register(initial_value) {
+            Some(id) => id,
+            None => return Ok(None),
+        };
+        self.objects.push_object(handle, id)?;
+        Ok(Some(id))
     }
 
     /// Mutably gets an event

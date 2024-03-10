@@ -8,4 +8,4 @@ mod socket_address;
 
 mod tcp_listener;
 
-pub use tcp_listener::TCPListener;
+pub use tcp_listener::{Accept, TCPListener};
