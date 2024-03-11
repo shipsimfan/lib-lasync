@@ -1,13 +1,14 @@
-use super::SocketAddress;
+use super::{SocketAddress, TCPStream};
 use crate::Win32Event;
 use executor::{Error, Result};
 use std::ffi::{c_int, c_long};
 use win32::{
     try_wsa_get_last_error,
     winsock2::{
-        bind, closesocket, ioctlsocket, listen, socket, WSAEventSelect, FIONBIO, INVALID_SOCKET,
-        SOCKET,
+        accept, bind, closesocket, ioctlsocket, listen, socket, WSAEventSelect, WSAGetLastError,
+        FIONBIO, INVALID_SOCKET, SOCKET,
     },
+    WSAEWOULDBLOCK,
 };
 
 /// A Win32 socket
@@ -21,7 +22,12 @@ impl Socket {
             return Err(Error::wsa_get_last_error());
         }
 
-        Ok(Socket(socket))
+        Ok(unsafe { Socket::from_raw(socket) })
+    }
+
+    /// Creates a new [`Socket`] from a raw Win32 [`SOCKET`]
+    pub(super) unsafe fn from_raw(socket: SOCKET) -> Self {
+        Socket(socket)
     }
 
     /// Binds the socket to `sockaddr`
@@ -38,6 +44,28 @@ impl Socket {
     pub(super) fn set_non_blocking(&mut self) -> Result<()> {
         let mut mode = 1;
         try_wsa_get_last_error!(ioctlsocket(self.0, FIONBIO, &mut mode)).map(|_| ())
+    }
+
+    /// Attempts to accept a connecting client on the underlying socket
+    pub(super) fn accept(
+        &mut self,
+        socket_address: &mut SocketAddress,
+    ) -> Result<Option<TCPStream>> {
+        match unsafe {
+            accept(
+                self.0,
+                socket_address.as_mut_ptr(),
+                std::mem::size_of::<TCPStream>() as _,
+            )
+        } {
+            INVALID_SOCKET => {}
+            socket => return Ok(Some(unsafe { TCPStream::from_raw(socket) })),
+        }
+
+        match unsafe { WSAGetLastError() } {
+            WSAEWOULDBLOCK => Ok(None),
+            error => Err(Error::new_win32(error as _)),
+        }
     }
 
     /// Signal `event` when any `network_events` fire

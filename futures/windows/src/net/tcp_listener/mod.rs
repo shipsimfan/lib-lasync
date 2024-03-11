@@ -2,7 +2,10 @@ use super::{Socket, SocketAddress};
 use crate::Win32Event;
 use executor::Result;
 use std::net::SocketAddr;
-use win32::winsock2::{FD_ACCEPT, SOCK_STREAM, SOMAXCONN};
+use win32::{
+    winsock2::{FD_ACCEPT, SOCK_STREAM, SOMAXCONN},
+    HANDLE,
+};
 
 mod accept;
 
@@ -36,5 +39,15 @@ impl TCPListener {
     /// Returns a future which yields when a new client connects to this socket
     pub fn accept(&mut self) -> Result<Accept> {
         Accept::new(self)
+    }
+
+    /// Gets the underlying [`Socket`]
+    pub(self) fn socket(&mut self) -> &mut Socket {
+        &mut self.socket
+    }
+
+    /// Gets the [`HANDLE`] to the event for this socket
+    pub(self) fn event_handle(&mut self) -> HANDLE {
+        self.accept_event.inner()
     }
 }
