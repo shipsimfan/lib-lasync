@@ -1,5 +1,5 @@
 use crate::{EventHandler, IOURing, Result, SQE};
-use executor_common::{Event, EventID, List, NoPoll};
+use executor_common::{Event, EventID, List};
 use std::{num::NonZeroUsize, ptr::null_mut};
 use uring::{io_uring_cqe_get_data64, io_uring_sqe_set_data64};
 
@@ -58,7 +58,7 @@ impl LocalEventManager {
     }
 
     /// Sleeps until an event is triggered
-    pub fn poll(&mut self) -> Result<NoPoll<crate::Error>> {
+    pub fn poll(&mut self) -> Result<()> {
         let mut cqe = null_mut();
 
         loop {
@@ -78,7 +78,7 @@ impl LocalEventManager {
             self.io_uring.seen(cqe);
 
             if self.io_uring.available_events() == 0 {
-                return Ok(NoPoll::new());
+                return Ok(());
             }
         }
     }

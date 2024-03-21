@@ -1,4 +1,4 @@
-use crate::time::{interval::Tick, Interval, Sleep};
+use crate::time::{interval::Tick, Interval};
 use executor::Result;
 use std::{
     future::Future,
