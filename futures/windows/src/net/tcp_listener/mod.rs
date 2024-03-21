@@ -11,7 +11,7 @@ mod accept;
 
 pub use accept::Accept;
 
-/// A listening socket for TCP connection
+/// A listening socket for TCP connections
 pub struct TCPListener {
     socket: Socket,
     accept_event: Win32Event,
