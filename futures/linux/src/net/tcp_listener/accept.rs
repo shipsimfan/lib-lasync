@@ -59,8 +59,7 @@ impl<'a> Accept<'a> {
     /// self.socket_address_len, self.sqe_submitted)`
     ///
     /// # SAFTEY
-    /// This is the only way to access the contained [`SocketAddress`], do not acces it
-    /// directly.
+    /// This is the only way to access the contained [`SocketAddress`], do not access it directly.
     unsafe fn project(
         self: Pin<&mut Self>,
     ) -> (

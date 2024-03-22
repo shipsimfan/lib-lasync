@@ -12,5 +12,7 @@ pub mod net;
 pub mod time;
 
 mod event_ref;
+mod fd;
 
 use event_ref::EventRef;
+use fd::{AsFD, FDRead};
