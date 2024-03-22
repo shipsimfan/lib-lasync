@@ -17,6 +17,11 @@ impl Socket {
         try_linux!(socket(family, SOCK_STREAM, 0)).map(|fd| Socket(fd))
     }
 
+    /// Creates a [`Socket`] from `fd`
+    pub(super) unsafe fn from_raw(fd: c_int) -> Self {
+        Socket(fd)
+    }
+
     /// Binds this socket to `addr` (IPv4)
     pub(super) fn bind(&mut self, address: &SocketAddress) -> Result<()> {
         try_linux!(bind(self.0, address.as_ptr(), address.len() as _)).map(|_| ())
@@ -25,6 +30,14 @@ impl Socket {
     /// Sets this socket into a listen state, allowing this socket to accept incoming connections
     pub(super) fn listen(&mut self, backlog: c_int) -> Result<()> {
         try_linux!(listen(self.0, backlog)).map(|_| ())
+    }
+
+    /// Gets the underlying file descriptor
+    ///
+    /// # SAFETY
+    /// It is up to the caller to correctly use this file descriptor
+    pub(super) unsafe fn fd(&self) -> c_int {
+        self.0
     }
 }
 

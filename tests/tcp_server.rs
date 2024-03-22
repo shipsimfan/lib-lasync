@@ -1,6 +1,7 @@
 use std::{
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     num::NonZeroUsize,
+    time::Duration,
 };
 
 const PORT: u16 = 8192;
@@ -18,6 +19,8 @@ fn tcp_server_accept() {
 
         let (stream, address) = tcp_listener.accept().unwrap().await.unwrap();
 
+        println!("Connection from {}", address);
+
         assert!(address.is_ipv4());
         let addr = match address {
             SocketAddr::V4(addr) => addr,
@@ -33,6 +36,8 @@ fn tcp_server_accept() {
 }
 
 fn tcp_server_accept_client() {
+    std::thread::sleep(Duration::from_secs(5));
+
     let stream = std::net::TcpStream::connect(SOCKET_ADDRESS).unwrap();
 
     drop(stream);

@@ -2,7 +2,10 @@ use linux::{
     netinet::r#in::{in6_addr, in_addr, sockaddr_in, sockaddr_in6},
     sys::socket::{sockaddr, AF_INET, AF_INET6},
 };
-use std::{ffi::c_int, net::SocketAddr};
+use std::{
+    ffi::c_int,
+    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
+};
 
 /// An address associated with a socket
 #[derive(Clone)]
@@ -56,6 +59,13 @@ impl SocketAddress {
             SocketAddress::V6(addr) => (addr as *const sockaddr_in6).cast(),
         }
     }
+
+    pub(super) fn as_mut_ptr(&mut self) -> *mut sockaddr {
+        match self {
+            SocketAddress::V4(addr) => (addr as *mut sockaddr_in).cast(),
+            SocketAddress::V6(addr) => (addr as *mut sockaddr_in6).cast(),
+        }
+    }
 }
 
 impl From<SocketAddr> for SocketAddress {
@@ -78,6 +88,23 @@ impl From<SocketAddr> for SocketAddress {
                 },
                 scope_id: addr.scope_id().to_be(),
             }),
+        }
+    }
+}
+
+impl Into<SocketAddr> for SocketAddress {
+    fn into(self) -> SocketAddr {
+        match self {
+            SocketAddress::V4(addr) => SocketAddr::V4(SocketAddrV4::new(
+                Ipv4Addr::from(addr.addr.addr.to_ne_bytes()),
+                addr.port.to_le(),
+            )),
+            SocketAddress::V6(addr) => SocketAddr::V6(SocketAddrV6::new(
+                Ipv6Addr::from(addr.addr.addr),
+                addr.port.to_le(),
+                addr.flow_info.to_le(),
+                addr.scope_id.to_le(),
+            )),
         }
     }
 }
