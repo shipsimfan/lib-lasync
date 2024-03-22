@@ -32,7 +32,7 @@ impl TCPListener {
     }
 
     /// Returns a future which yields when a new client connects to this socket
-    pub fn accept(&self) -> Result<Accept> {
+    pub fn accept(&self) -> Accept {
         Accept::new(self)
     }
 }

@@ -17,7 +17,7 @@ fn tcp_server_accept() {
 
         let child = std::thread::spawn(tcp_server_accept_client);
 
-        let (stream, address) = tcp_listener.accept().unwrap().await.unwrap();
+        let (stream, address) = tcp_listener.accept().await.unwrap();
 
         println!("Connection from {}", address);
 

@@ -17,7 +17,7 @@ pub struct Accept<'a> {
     listener: &'a TCPListener,
 
     /// The event ID this is registered under
-    event_id: EventRef,
+    event_id: Result<EventRef>,
 
     /// The space to for the incoming clients socket address
     socket_address: SocketAddress,
@@ -40,19 +40,19 @@ fn accept_callback(cqe: &mut io_uring_cqe, value: &mut usize) {
 
 impl<'a> Accept<'a> {
     /// Creates a new [`Accept`] future
-    pub(super) fn new(listener: &'a TCPListener) -> Result<Self> {
-        let event_id = EventRef::register(EventHandler::new(0, accept_callback))?;
+    pub(super) fn new(listener: &'a TCPListener) -> Self {
+        let event_id = EventRef::register(EventHandler::new(0, accept_callback));
 
         let socket_address = SocketAddress::default(listener.socket_family);
         let socket_address_len = socket_address.len() as _;
 
-        Ok(Accept {
+        Accept {
             listener,
             event_id,
             socket_address,
             socket_address_len,
             sqe_submitted: false,
-        })
+        }
     }
 
     /// Projects pinned self into `(self.listener, self.event_id, self.socket_address,
@@ -65,7 +65,7 @@ impl<'a> Accept<'a> {
         self: Pin<&mut Self>,
     ) -> (
         &TCPListener,
-        EventID,
+        Result<EventID>,
         Pin<&mut SocketAddress>,
         Pin<&mut socklen_t>,
         &mut bool,
@@ -74,7 +74,10 @@ impl<'a> Accept<'a> {
 
         (
             this.listener,
-            *this.event_id,
+            this.event_id
+                .as_ref()
+                .map(|event_id| **event_id)
+                .map_err(|error| *error),
             Pin::new(&mut this.socket_address),
             Pin::new(&mut this.socket_address_len),
             &mut this.sqe_submitted,
@@ -88,6 +91,11 @@ impl<'a> Future for Accept<'a> {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let (listener, event_id, mut socket_address, socket_address_len, sqe_submitted) =
             unsafe { self.project() };
+
+        let event_id = match event_id {
+            Ok(event_id) => event_id,
+            Err(error) => return Poll::Ready(Err(error)),
+        };
 
         EventManager::get_local_mut(|manager| {
             // Submit the SQE if one hasn't been submitted yet
@@ -129,14 +137,16 @@ impl<'a> Future for Accept<'a> {
 
 impl<'a> Drop for Accept<'a> {
     fn drop(&mut self) {
-        if self.sqe_submitted {
-            EventManager::get_local_mut(|manager| {
-                let sqe = manager.get_sqe(*self.event_id).unwrap();
+        if let Ok(event_id) = &self.event_id {
+            if self.sqe_submitted {
+                EventManager::get_local_mut(|manager| {
+                    let sqe = manager.get_sqe(**event_id).unwrap();
 
-                unsafe { io_uring_prep_cancel64(sqe.as_ptr(), (*self.event_id).into_u64(), 0) };
+                    unsafe { io_uring_prep_cancel64(sqe.as_ptr(), (**event_id).into_u64(), 0) };
 
-                sqe.submit().unwrap();
-            })
+                    sqe.submit().unwrap();
+                })
+            }
         }
     }
 }
