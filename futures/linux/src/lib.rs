@@ -7,6 +7,7 @@
 #![warn(rustdoc::broken_intra_doc_links)]
 #![feature(ip_bits)]
 
+pub mod io;
 pub mod net;
 pub mod time;
 
