@@ -1,14 +1,19 @@
 use super::{Socket, SocketAddress};
 use executor::Result;
 use linux::sys::socket::SOMAXCONN;
-use std::{net::SocketAddr, pin::Pin};
+use std::{ffi::c_int, net::SocketAddr};
+
+mod accept;
+
+pub use accept::Accept;
 
 /// A listening socket for TCP connections
 pub struct TCPListener {
+    /// The underlying socket
     socket: Socket,
-    socket_address: SocketAddress,
 
-    accept_socket_address: Pin<Box<SocketAddress>>,
+    /// The family this socket was created with
+    socket_family: c_int,
 }
 
 impl TCPListener {
@@ -20,13 +25,14 @@ impl TCPListener {
         socket.bind(&socket_address)?;
         socket.listen(SOMAXCONN)?;
 
-        let accept_socket_address = Box::pin(SocketAddress::default(socket_address.family()));
-
         Ok(TCPListener {
             socket,
-            socket_address,
-
-            accept_socket_address,
+            socket_family: socket_address.family(),
         })
+    }
+
+    /// Returns a future which yields when a new client connects to this socket
+    pub fn accept(&self) -> Result<Accept> {
+        Accept::new(self)
     }
 }

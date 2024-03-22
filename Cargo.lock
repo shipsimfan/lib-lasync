@@ -80,7 +80,7 @@ source = "git+https://github.com/shipsimfan/lib-linux#8b4fcbbca572919149ee935545
 [[package]]
 name = "uring"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-uring#975262511996daef9cf10d93996f7f74cf1028f6"
+source = "git+https://github.com/shipsimfan/lib-uring#a458071efa01acb551f4f03e6f237d70d7b155a9"
 dependencies = [
  "linux",
 ]

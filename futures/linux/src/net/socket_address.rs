@@ -5,6 +5,7 @@ use linux::{
 use std::{ffi::c_int, net::SocketAddr};
 
 /// An address associated with a socket
+#[derive(Clone)]
 pub(super) enum SocketAddress {
     /// IPv4
     V4(sockaddr_in),
@@ -63,7 +64,7 @@ impl From<SocketAddr> for SocketAddress {
             SocketAddr::V4(addr) => SocketAddress::V4(sockaddr_in {
                 family: AF_INET as _,
                 addr: in_addr {
-                    addr: addr.ip().to_bits(),
+                    addr: addr.ip().to_bits().to_be(),
                 },
                 port: addr.port().to_be(),
                 zero: [0; 8],
@@ -71,11 +72,11 @@ impl From<SocketAddr> for SocketAddress {
             SocketAddr::V6(addr) => SocketAddress::V6(sockaddr_in6 {
                 family: AF_INET6 as _,
                 port: addr.port().to_be(),
-                flow_info: addr.flowinfo(),
+                flow_info: addr.flowinfo().to_be(),
                 addr: in6_addr {
                     addr: addr.ip().octets(),
                 },
-                scope_id: addr.scope_id(),
+                scope_id: addr.scope_id().to_be(),
             }),
         }
     }

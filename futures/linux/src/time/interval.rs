@@ -117,12 +117,16 @@ impl<'a> Future for Tick<'a> {
 
 impl Drop for Interval {
     fn drop(&mut self) {
-        EventManager::get_local_mut(|manager| {
-            let sqe = manager.get_sqe(*self.event_id).unwrap();
+        if self.sqe_submitted {
+            EventManager::get_local_mut(|manager| {
+                let sqe = manager.get_sqe(*self.event_id).unwrap();
 
-            unsafe { io_uring_prep_timeout_remove(sqe.as_ptr(), (*self.event_id).into_u64(), 0) };
+                unsafe {
+                    io_uring_prep_timeout_remove(sqe.as_ptr(), (*self.event_id).into_u64(), 0)
+                };
 
-            sqe.submit().unwrap();
-        })
+                sqe.submit().unwrap();
+            })
+        }
     }
 }
