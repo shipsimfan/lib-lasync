@@ -12,8 +12,8 @@ pub(super) struct Socket(c_int);
 
 impl Socket {
     /// Creates a new unbound [`Socket`]
-    pub(super) fn new() -> Result<Self> {
-        try_linux!(socket(AF_INET, SOCK_STREAM, 0)).map(|fd| Socket(fd))
+    pub(super) fn new(family: c_int) -> Result<Self> {
+        try_linux!(socket(family, SOCK_STREAM, 0)).map(|fd| Socket(fd))
     }
 
     /// Binds this socket to `addr` (IPv4)
