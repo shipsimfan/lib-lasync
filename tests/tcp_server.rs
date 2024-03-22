@@ -7,6 +7,5 @@ const SOCKET_ADDRESS: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UN
 fn tcp_server() {
     let tcp_listener = lasync::futures::net::TCPListener::bind(SOCKET_ADDRESS).unwrap();
 
-    loop {
-    }
+    loop {}
 }
