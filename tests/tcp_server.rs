@@ -9,7 +9,7 @@ const SOCKET_ADDRESS: SocketAddr =
 
 const SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(32) };
 
-const DATA: &[u8] = b"The quick brown fox jumps over the lazy dog";
+const DATA: &[u8] = include_bytes!("test_data.txt");
 
 #[test]
 fn tcp_server_accept() {
