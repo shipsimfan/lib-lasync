@@ -1,11 +1,7 @@
 use std::{
-    io::Write,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     num::NonZeroUsize,
-    time::Duration,
 };
-
-use futures::io::Read;
 
 const PORT: u16 = 8192;
 const SOCKET_ADDRESS: SocketAddr =
@@ -48,6 +44,8 @@ fn tcp_server_accept_client() {
 
 #[test]
 fn tcp_server_read() {
+    use futures::io::Read;
+
     lasync::executor::run(SIZE, async {
         let tcp_listener = lasync::futures::net::TCPListener::bind(SOCKET_ADDRESS).unwrap();
 
@@ -67,7 +65,7 @@ fn tcp_server_read() {
         assert!(buf.is_empty());
         assert_eq!(buffer, DATA);
 
-        println!("{}", String::from_utf8_lossy(DATA));
+        println!("{}", String::from_utf8_lossy(&buffer));
 
         child.join().unwrap();
     })
@@ -75,7 +73,48 @@ fn tcp_server_read() {
 }
 
 fn tcp_server_read_client() {
+    use std::io::Write;
+
     let mut stream = std::net::TcpStream::connect(SOCKET_ADDRESS).unwrap();
 
     stream.write_all(DATA).unwrap();
+}
+
+#[test]
+fn tcp_server_write() {
+    use futures::io::Write;
+
+    lasync::executor::run(SIZE, async {
+        let tcp_listener = lasync::futures::net::TCPListener::bind(SOCKET_ADDRESS).unwrap();
+
+        let child = std::thread::spawn(tcp_server_write_client);
+
+        let (mut stream, _) = tcp_listener.accept().await.unwrap();
+
+        let mut buf = DATA;
+        while !buf.is_empty() {
+            match stream.write(buf).await.unwrap() {
+                0 => break,
+                n => buf = &buf[n..],
+            }
+        }
+
+        assert!(buf.is_empty());
+
+        child.join().unwrap();
+    })
+    .unwrap();
+}
+
+fn tcp_server_write_client() {
+    use std::io::Read;
+
+    let mut stream = std::net::TcpStream::connect(SOCKET_ADDRESS).unwrap();
+
+    let mut buffer = [0; DATA.len()];
+    stream.read_exact(&mut buffer).unwrap();
+
+    assert_eq!(buffer, DATA);
+
+    println!("{}", String::from_utf8_lossy(&buffer));
 }

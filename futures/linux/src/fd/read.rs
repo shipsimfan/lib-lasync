@@ -82,13 +82,14 @@ impl<'a, R: AsFD> Future for FDRead<'a, R> {
             // Submit the SQE if one hasn't been submitted yet
             if !*sqe_submitted {
                 let sqe = manager.get_sqe(event_id).unwrap();
+                let length = buffer.len();
 
                 unsafe {
                     io_uring_prep_read(
                         sqe.as_ptr(),
                         source.fd(),
-                        buffer.as_ptr() as _,
-                        buffer.len() as _,
+                        buffer.get_mut().as_mut_ptr() as _,
+                        length as _,
                         u64::MAX,
                     )
                 };

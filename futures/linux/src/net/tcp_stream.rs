@@ -1,5 +1,9 @@
 use super::Socket;
-use crate::{io::Read, AsFD, FDRead};
+use crate::{
+    fd::FDWrite,
+    io::{Read, Write},
+    AsFD, FDRead,
+};
 use std::ffi::c_int;
 
 /// A TCP stream between a local and a remote socket
@@ -29,5 +33,14 @@ impl Read for TCPStream {
         buf: &'a mut [u8],
     ) -> impl std::future::Future<Output = linux::Result<usize>> + 'a {
         FDRead::new(self, buf)
+    }
+}
+
+impl Write for TCPStream {
+    fn write<'a>(
+        &'a mut self,
+        buf: &'a [u8],
+    ) -> impl std::future::Future<Output = linux::Result<usize>> + 'a {
+        FDWrite::new(self, buf)
     }
 }
