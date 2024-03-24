@@ -2,19 +2,19 @@ use crate::FutureQueue;
 use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 /// A [`Future`] which can re-schedule itself
-pub(crate) struct Task {
+pub(crate) struct Task<'a> {
     /// The [`Future`] to be driven to completion
-    future: RefCell<Option<Pin<Box<dyn Future<Output = ()>>>>>,
+    future: RefCell<Option<Pin<Box<dyn Future<Output = ()> + 'a>>>>,
 
     /// The queue to re-schedule the future on
-    future_queue: FutureQueue,
+    future_queue: FutureQueue<'a>,
 }
 
-impl Task {
+impl<'a> Task<'a> {
     /// Creates a new [`Task`] for `future`
     pub(super) fn new(
-        future: impl Future<Output = ()> + 'static,
-        future_queue: FutureQueue,
+        future: impl Future<Output = ()> + 'a,
+        future_queue: FutureQueue<'a>,
     ) -> Self {
         Task {
             future: RefCell::new(Some(Box::pin(future))),
@@ -23,7 +23,7 @@ impl Task {
     }
 
     /// Gets the underyling [`Future`]
-    pub(crate) fn future(&self) -> &RefCell<Option<Pin<Box<dyn Future<Output = ()>>>>> {
+    pub(crate) fn future(&self) -> &RefCell<Option<Pin<Box<dyn Future<Output = ()> + 'a>>>> {
         &self.future
     }
 

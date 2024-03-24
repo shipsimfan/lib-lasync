@@ -2,14 +2,14 @@ use crate::{platform::Result, EventManager, FutureQueue, WakerRef};
 use std::{future::Future, num::NonZeroUsize, task::Context};
 
 /// Runs a local executor on `future`
-pub fn run(size: NonZeroUsize, future: impl Future<Output = ()> + 'static) -> Result<()> {
+pub fn run<'a>(size: NonZeroUsize, future: impl Future<Output = ()> + 'a) -> Result<()> {
     let queue = FutureQueue::new();
     queue.push(future);
     run_queue(size, queue)
 }
 
 /// Executes the tasks in the [`FutureQueue`]
-pub fn run_queue(size: NonZeroUsize, queue: FutureQueue) -> Result<()> {
+pub fn run_queue<'a>(size: NonZeroUsize, queue: FutureQueue<'a>) -> Result<()> {
     let mut event_manager = EventManager::new(size)?;
 
     loop {
