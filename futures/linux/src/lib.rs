@@ -9,6 +9,7 @@
 
 pub mod io;
 pub mod net;
+pub mod sync;
 pub mod time;
 
 mod event_ref;
