@@ -1,6 +1,6 @@
 use executor::Result;
 use linux::{
-    sys::socket::{bind, getsockname, listen, socket, SOCK_STREAM},
+    sys::socket::{bind, getsockname, listen, socket, socklen_t, SOCK_STREAM},
     try_linux,
     unistd::close,
 };
@@ -34,13 +34,9 @@ impl Socket {
 
     pub(super) fn local_addr(&self) -> Result<SocketAddress> {
         let mut address = SocketAddress::default(self.family);
+        let mut len = address.len() as socklen_t;
 
-        try_linux!(getsockname(
-            self.fd,
-            address.as_mut_ptr(),
-            address.len() as _
-        ))
-        .map(|_| address)
+        try_linux!(getsockname(self.fd, address.as_mut_ptr(), &mut len)).map(|_| address)
     }
 
     /// Binds this socket to `addr` (IPv4)
