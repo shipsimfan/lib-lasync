@@ -97,13 +97,13 @@ impl Into<SocketAddr> for SocketAddress {
         match self {
             SocketAddress::V4(addr) => SocketAddr::V4(SocketAddrV4::new(
                 Ipv4Addr::from(addr.addr.addr.to_ne_bytes()),
-                addr.port.to_le(),
+                addr.port.to_be(),
             )),
             SocketAddress::V6(addr) => SocketAddr::V6(SocketAddrV6::new(
                 Ipv6Addr::from(addr.addr.addr),
-                addr.port.to_le(),
-                addr.flow_info.to_le(),
-                addr.scope_id.to_le(),
+                addr.port.to_be(),
+                addr.flow_info.to_be(),
+                addr.scope_id.to_be(),
             )),
         }
     }
