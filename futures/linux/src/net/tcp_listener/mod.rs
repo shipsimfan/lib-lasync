@@ -1,20 +1,14 @@
 use super::{Socket, SocketAddress};
 use executor::Result;
 use linux::sys::socket::SOMAXCONN;
-use std::{ffi::c_int, net::SocketAddr};
+use std::net::SocketAddr;
 
 mod accept;
 
 pub use accept::Accept;
 
 /// A listening socket for TCP connections
-pub struct TCPListener {
-    /// The underlying socket
-    socket: Socket,
-
-    /// The family this socket was created with
-    socket_family: c_int,
-}
+pub struct TCPListener(Socket);
 
 impl TCPListener {
     /// Creates a new [`TCPListener`] bound to `addr`
@@ -25,10 +19,12 @@ impl TCPListener {
         socket.bind(&socket_address)?;
         socket.listen(SOMAXCONN)?;
 
-        Ok(TCPListener {
-            socket,
-            socket_family: socket_address.family(),
-        })
+        Ok(TCPListener(socket))
+    }
+
+    /// Gets the local address of this socket
+    pub fn local_addr(&self) -> Result<SocketAddr> {
+        self.0.local_addr().map(|address| address.into())
     }
 
     /// Returns a future which yields when a new client connects to this socket

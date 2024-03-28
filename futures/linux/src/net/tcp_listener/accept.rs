@@ -43,7 +43,7 @@ impl<'a> Accept<'a> {
     pub(super) fn new(listener: &'a TCPListener) -> Self {
         let event_id = EventRef::register(EventHandler::new(0, accept_callback));
 
-        let socket_address = SocketAddress::default(listener.socket_family);
+        let socket_address = SocketAddress::default(listener.0.family());
         let socket_address_len = socket_address.len() as _;
 
         Accept {
@@ -104,7 +104,7 @@ impl<'a> Future for Accept<'a> {
                 unsafe {
                     io_uring_prep_accept(
                         sqe.as_ptr(),
-                        listener.socket.fd(),
+                        listener.0.fd(),
                         socket_address.as_mut_ptr(),
                         socket_address_len.get_mut(),
                         0,
@@ -127,8 +127,8 @@ impl<'a> Future for Accept<'a> {
                 return Poll::Ready(Err(Error::new(-fd)));
             }
 
+            let tcp_stream = unsafe { TCPStream::from_raw(fd, socket_address.family()) };
             let socket_address: SocketAddr = socket_address.clone().into();
-            let tcp_stream = unsafe { TCPStream::from_raw(fd) };
             Poll::Ready(Ok((tcp_stream, socket_address)))
         })
     }

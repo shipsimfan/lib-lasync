@@ -7,23 +7,20 @@ use crate::{
 use std::ffi::c_int;
 
 /// A TCP stream between a local and a remote socket
-pub struct TCPStream {
-    /// The underlying socket
-    socket: Socket,
-}
+pub struct TCPStream(Socket);
 
 impl TCPStream {
     /// Creates a [`TCPStream`] directly from `fd`
-    pub(super) unsafe fn from_raw(fd: c_int) -> Self {
-        let socket = Socket::from_raw(fd);
+    pub(super) unsafe fn from_raw(fd: c_int, family: c_int) -> Self {
+        let socket = Socket::from_raw(fd, family);
 
-        TCPStream { socket }
+        TCPStream(socket)
     }
 }
 
 impl AsFD for TCPStream {
     unsafe fn fd(&self) -> c_int {
-        self.socket.fd()
+        self.0.fd()
     }
 }
 

@@ -75,7 +75,7 @@ dependencies = [
 [[package]]
 name = "linux"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-linux#8b4fcbbca572919149ee9355451149129248052e"
+source = "git+https://github.com/shipsimfan/lib-linux#cdfdd54f60408ddc31afc7306f5d742bd224030c"
 
 [[package]]
 name = "uring"
