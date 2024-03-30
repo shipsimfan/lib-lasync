@@ -1,6 +1,6 @@
 use executor::Result;
 use linux::{
-    sys::socket::{bind, getsockname, listen, socket, socklen_t, SOCK_STREAM},
+    sys::socket::{bind, getpeername, getsockname, listen, socket, socklen_t, SOCK_STREAM},
     try_linux,
     unistd::close,
 };
@@ -28,15 +28,25 @@ impl Socket {
         Socket { fd, family }
     }
 
+    /// Gets the family this was created for
     pub(super) fn family(&self) -> c_int {
         self.family
     }
 
+    /// Gets the locally bound address
     pub(super) fn local_addr(&self) -> Result<SocketAddress> {
         let mut address = SocketAddress::default(self.family);
         let mut len = address.len() as socklen_t;
 
         try_linux!(getsockname(self.fd, address.as_mut_ptr(), &mut len)).map(|_| address)
+    }
+
+    /// Gets the remote address of the peer
+    pub(super) fn peer_addr(&self) -> Result<SocketAddress> {
+        let mut address = SocketAddress::default(self.family);
+        let mut len = address.len() as socklen_t;
+
+        try_linux!(getpeername(self.fd, address.as_mut_ptr(), &mut len)).map(|_| address)
     }
 
     /// Binds this socket to `addr` (IPv4)

@@ -4,7 +4,8 @@ use crate::{
     io::{Read, Write},
     AsFD, FDRead,
 };
-use std::ffi::c_int;
+use executor::Result;
+use std::{ffi::c_int, net::SocketAddr};
 
 /// A TCP stream between a local and a remote socket
 pub struct TCPStream(Socket);
@@ -15,6 +16,16 @@ impl TCPStream {
         let socket = Socket::from_raw(fd, family);
 
         TCPStream(socket)
+    }
+
+    /// Gets the locally bound address
+    pub fn local_addr(&self) -> Result<SocketAddr> {
+        self.0.local_addr().map(|addr| addr.into())
+    }
+
+    /// Gets the remote address of the peer
+    pub fn peer_addr(&self) -> Result<SocketAddr> {
+        self.0.peer_addr().map(|addr| addr.into())
     }
 }
 
