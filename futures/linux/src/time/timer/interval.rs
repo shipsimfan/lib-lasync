@@ -51,3 +51,6 @@ impl<'a, 'b: 'a> Future for TimerTick<'a, 'b> {
         Pin::new(&mut self.inner).poll(cx)
     }
 }
+
+impl<'a> !Send for TimerInterval<'a> {}
+impl<'a> !Sync for TimerInterval<'a> {}

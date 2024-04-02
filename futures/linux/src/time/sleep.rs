@@ -116,3 +116,6 @@ impl Drop for Sleep {
         }
     }
 }
+
+impl !Send for Sleep {}
+impl !Sync for Sleep {}

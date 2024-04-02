@@ -44,3 +44,6 @@ impl<'a, F: Future> Future for TimerTimeout<'a, F> {
         Poll::Pending
     }
 }
+
+impl<'a, F: Future> !Send for TimerTimeout<'a, F> {}
+impl<'a, F: Future> !Sync for TimerTimeout<'a, F> {}

@@ -32,3 +32,6 @@ impl TCPListener {
         Accept::new(self)
     }
 }
+
+unsafe impl Send for TCPListener {}
+unsafe impl Sync for TCPListener {}

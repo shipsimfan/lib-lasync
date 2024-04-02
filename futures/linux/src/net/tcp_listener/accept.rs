@@ -149,3 +149,6 @@ impl<'a> Drop for Accept<'a> {
         }
     }
 }
+
+impl<'a> !Send for Accept<'a> {}
+impl<'a> !Sync for Accept<'a> {}

@@ -34,3 +34,6 @@ impl<'a> Future for TimerSleep<'a> {
         Pin::new(&mut self.inner).poll(cx)
     }
 }
+
+impl<'a> !Send for TimerSleep<'a> {}
+impl<'a> !Sync for TimerSleep<'a> {}

@@ -49,3 +49,6 @@ impl<F: Future> Future for Timeout<F> {
         Poll::Pending
     }
 }
+
+impl<F: Future> !Send for Timeout<F> {}
+impl<F: Future> !Sync for Timeout<F> {}

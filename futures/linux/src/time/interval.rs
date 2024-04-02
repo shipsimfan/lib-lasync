@@ -65,6 +65,25 @@ impl Interval {
     }
 }
 
+impl Drop for Interval {
+    fn drop(&mut self) {
+        if self.sqe_submitted {
+            EventManager::get_local_mut(|manager| {
+                let sqe = manager.get_sqe(*self.event_id).unwrap();
+
+                unsafe {
+                    io_uring_prep_timeout_remove(sqe.as_ptr(), (*self.event_id).into_u64(), 0)
+                };
+
+                sqe.submit().unwrap();
+            })
+        }
+    }
+}
+
+impl !Send for Interval {}
+impl !Sync for Interval {}
+
 impl<'a> Tick<'a> {
     /// Projects this into `(self.timespec, self.interval)`
     ///
@@ -115,18 +134,5 @@ impl<'a> Future for Tick<'a> {
     }
 }
 
-impl Drop for Interval {
-    fn drop(&mut self) {
-        if self.sqe_submitted {
-            EventManager::get_local_mut(|manager| {
-                let sqe = manager.get_sqe(*self.event_id).unwrap();
-
-                unsafe {
-                    io_uring_prep_timeout_remove(sqe.as_ptr(), (*self.event_id).into_u64(), 0)
-                };
-
-                sqe.submit().unwrap();
-            })
-        }
-    }
-}
+impl<'a> !Send for Tick<'a> {}
+impl<'a> !Sync for Tick<'a> {}

@@ -52,3 +52,6 @@ impl Write for TCPStream {
         FDWrite::new(self, buf)
     }
 }
+
+unsafe impl Send for TCPStream {}
+unsafe impl Sync for TCPStream {}

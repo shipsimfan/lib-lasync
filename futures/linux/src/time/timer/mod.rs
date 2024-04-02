@@ -37,3 +37,6 @@ impl Timer {
         TimerTimeout::new(self, future, timeout)
     }
 }
+
+impl !Send for Timer {}
+impl !Sync for Timer {}
