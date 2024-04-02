@@ -9,12 +9,10 @@ const SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(32) };
 fn one_timer() {
     let start = Instant::now();
 
-    lasync::executor::run(SIZE, async {
+    lasync::run(SIZE, async {
         println!("Hello");
 
-        lasync::futures::time::sleep(Duration::from_secs(1))
-            .unwrap()
-            .await;
+        lasync::time::sleep(Duration::from_secs(1)).unwrap().await;
 
         println!("World!");
     })
@@ -27,12 +25,12 @@ fn one_timer() {
 
 #[test]
 fn two_timers() {
-    let queue = lasync::executor::FutureQueue::new();
+    let queue = lasync::FutureQueue::new();
 
     queue.push(async {
         println!("Task 1 - Start");
 
-        lasync::futures::time::sleep(Duration::from_millis(1500))
+        lasync::time::sleep(Duration::from_millis(1500))
             .unwrap()
             .await;
 
@@ -42,13 +40,13 @@ fn two_timers() {
     queue.push(async {
         println!("Task 2 - Start");
 
-        lasync::futures::time::sleep(Duration::from_millis(500))
+        lasync::time::sleep(Duration::from_millis(500))
             .unwrap()
             .await;
 
         println!("Task 2 - Middle");
 
-        lasync::futures::time::sleep(Duration::from_millis(1500))
+        lasync::time::sleep(Duration::from_millis(1500))
             .unwrap()
             .await;
 
@@ -57,7 +55,7 @@ fn two_timers() {
 
     let start = Instant::now();
 
-    lasync::executor::run_queue(SIZE, queue).unwrap();
+    lasync::run_queue(SIZE, queue).unwrap();
 
     let end = Instant::now();
     let duration = end.duration_since(start);

@@ -10,8 +10,8 @@ fn run_interval(count: usize, tick: Duration) {
 
     let start = Instant::now();
 
-    lasync::executor::run(SIZE, async move {
-        let mut interval = lasync::futures::time::interval(tick).unwrap();
+    lasync::run(SIZE, async move {
+        let mut interval = lasync::time::interval(tick).unwrap();
 
         for i in 0..count {
             interval.tick().await;
