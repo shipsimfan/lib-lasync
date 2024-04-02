@@ -7,9 +7,11 @@ use std::{
 };
 
 /// A [`Future`] which can be used to signal or be signalled by other tasks
-pub struct Notify(RefCell<NotifyInner>);
+///
+/// This can only be used on one thread. For signalling across threads, see [`Notify`].
+pub struct LocalNotify(RefCell<LocalNotifyInner>);
 
-struct NotifyInner {
+struct LocalNotifyInner {
     /// Has this been notified
     state: bool,
 
@@ -18,18 +20,18 @@ struct NotifyInner {
 }
 
 /// A [`Future`] which yields when signalled by another task
-pub struct Notified<'a> {
-    /// The [`Notify`] to watch
-    notify: &'a Notify,
+pub struct LocalNotified<'a> {
+    /// The [`LocalNotify`] to watch
+    notify: &'a LocalNotify,
 
-    /// Has this [`Future`] been registered with the [`Notify`]?
+    /// Has this [`Future`] been registered with the [`LocalNotify`]?
     registered: bool,
 }
 
-impl Notify {
-    /// Creates a new unsignalled [`Notify`]
+impl LocalNotify {
+    /// Creates a new unsignalled [`LocalNotify`]
     pub const fn new() -> Self {
-        Notify(RefCell::new(NotifyInner {
+        LocalNotify(RefCell::new(LocalNotifyInner {
             state: false,
             tasks: VecDeque::new(),
         }))
@@ -58,16 +60,19 @@ impl Notify {
         notify.state = false;
     }
 
-    /// Creates a [`Notified`] [`Future`] which can be `await`ed on to be signalled
-    pub fn notified(&self) -> Notified {
-        Notified {
+    /// Creates a [`LocalNotified`] [`Future`] which can be `await`ed on to be signalled
+    pub fn notified(&self) -> LocalNotified {
+        LocalNotified {
             notify: self,
             registered: false,
         }
     }
 }
 
-impl<'a> Future for Notified<'a> {
+impl !Send for LocalNotify {}
+impl !Sync for LocalNotify {}
+
+impl<'a> Future for LocalNotified<'a> {
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -90,3 +95,6 @@ impl<'a> Future for Notified<'a> {
         }
     }
 }
+
+impl<'a> !Send for LocalNotified<'a> {}
+impl<'a> !Sync for LocalNotified<'a> {}

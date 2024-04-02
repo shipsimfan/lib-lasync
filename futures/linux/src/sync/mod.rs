@@ -1,5 +1,5 @@
 //! Futures for synchronization
 
-mod notify;
+mod local;
 
-pub use notify::{Notified, Notify};
+pub use local::{LocalNotified, LocalNotify};
