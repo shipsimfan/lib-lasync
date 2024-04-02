@@ -122,7 +122,7 @@ impl<'a> Future for Tick<'a> {
 
             // Check if the event is ready
             let event = manager.get_event_mut(*interval.event_id).unwrap();
-            let value = event.get_data().as_integer();
+            let value = event.data().as_integer();
             if value > 0 {
                 event.data_mut().set_integer(value - 1);
                 return Poll::Ready(());

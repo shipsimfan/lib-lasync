@@ -36,3 +36,6 @@ impl<'a> Deref for WakerRef<'a> {
         &self.waker
     }
 }
+
+impl<'a> !Send for WakerRef<'a> {}
+impl<'a> !Sync for WakerRef<'a> {}

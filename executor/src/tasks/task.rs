@@ -33,3 +33,6 @@ impl<'a> Task<'a> {
         self.future_queue.push_raw(cloned);
     }
 }
+
+impl<'a> !Send for Task<'a> {}
+impl<'a> !Sync for Task<'a> {}

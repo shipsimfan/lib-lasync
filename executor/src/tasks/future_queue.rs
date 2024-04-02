@@ -32,3 +32,6 @@ impl<'a> FutureQueue<'a> {
         self.0.borrow_mut().push_back(task);
     }
 }
+
+impl<'a> !Send for FutureQueue<'a> {}
+impl<'a> !Sync for FutureQueue<'a> {}

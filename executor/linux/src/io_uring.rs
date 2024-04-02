@@ -75,3 +75,6 @@ impl Drop for IOURing {
         unsafe { io_uring_queue_exit(&mut self.inner) };
     }
 }
+
+impl !Send for IOURing {}
+impl !Sync for IOURing {}

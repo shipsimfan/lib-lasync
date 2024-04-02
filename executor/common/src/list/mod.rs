@@ -120,3 +120,6 @@ impl<T> IndexMut<EventID> for List<T> {
         self.get_mut(index).unwrap()
     }
 }
+
+impl<T> !Send for List<T> {}
+impl<T> !Sync for List<T> {}

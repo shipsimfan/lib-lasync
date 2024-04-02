@@ -1,10 +1,11 @@
 use std::{
     cell::RefCell,
-    collections::VecDeque,
     future::Future,
     pin::Pin,
-    task::{Context, Poll, Waker},
+    task::{Context, Poll},
 };
+
+use executor::platform::WaitQueue;
 
 /// A [`Future`] which can be used to signal or be signalled by other tasks
 ///
@@ -16,7 +17,7 @@ struct LocalNotifyInner {
     state: bool,
 
     /// The tasks to notify
-    tasks: VecDeque<Waker>,
+    tasks: WaitQueue,
 }
 
 /// A [`Future`] which yields when signalled by another task
@@ -33,7 +34,7 @@ impl LocalNotify {
     pub const fn new() -> Self {
         LocalNotify(RefCell::new(LocalNotifyInner {
             state: false,
-            tasks: VecDeque::new(),
+            tasks: WaitQueue::new(),
         }))
     }
 
@@ -41,7 +42,7 @@ impl LocalNotify {
     pub fn notify_one(&self) {
         let mut notify = self.0.borrow_mut();
 
-        if let Some(task) = notify.tasks.pop_front() {
+        if let Some(task) = notify.tasks.pop() {
             task.wake();
             notify.state = false;
         } else {
@@ -53,7 +54,7 @@ impl LocalNotify {
     pub fn notify_all(&self) {
         let mut notify = self.0.borrow_mut();
 
-        while let Some(task) = notify.tasks.pop_front() {
+        while let Some(task) = notify.tasks.pop() {
             task.wake();
         }
 
@@ -90,7 +91,7 @@ impl<'a> Future for LocalNotified<'a> {
                 return Poll::Ready(());
             }
 
-            notify.tasks.push_back(cx.waker().clone());
+            notify.tasks.push(cx.waker().clone());
             Poll::Pending
         }
     }

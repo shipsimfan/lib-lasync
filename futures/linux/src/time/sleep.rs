@@ -90,7 +90,7 @@ impl Future for Sleep {
 
             // Check if the event is ready
             let event = manager.get_event_mut(event_id).unwrap();
-            if event.get_data().as_integer() > 0 {
+            if event.data().as_integer() > 0 {
                 *completed = true;
                 return Poll::Ready(());
             }

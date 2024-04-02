@@ -83,3 +83,6 @@ impl LocalEventManager {
         }
     }
 }
+
+impl !Send for LocalEventManager {}
+impl !Sync for LocalEventManager {}

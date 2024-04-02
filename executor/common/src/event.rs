@@ -50,3 +50,6 @@ impl<T: Copy> Event<T> {
         self.data
     }
 }
+
+impl<T> !Send for Event<T> {}
+impl<T> !Sync for Event<T> {}

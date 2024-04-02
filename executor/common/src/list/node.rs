@@ -114,3 +114,6 @@ impl<T> Node<T> {
         }
     }
 }
+
+impl<T> !Send for Node<T> {}
+impl<T> !Sync for Node<T> {}

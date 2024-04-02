@@ -23,3 +23,6 @@ impl<'a> SQE<'a> {
         self.ring.submit_sqe(self.inner)
     }
 }
+
+impl<'a> !Send for SQE<'a> {}
+impl<'a> !Sync for SQE<'a> {}

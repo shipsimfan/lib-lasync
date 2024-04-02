@@ -116,7 +116,7 @@ impl<'a> Future for Accept<'a> {
             }
 
             let event = manager.get_event_mut(event_id).unwrap();
-            let value = event.get_data().as_integer();
+            let value = event.data().as_integer();
             if value & SIGNAL_BIT == 0 {
                 event.set_waker(Some(cx.waker().clone()));
                 return Poll::Pending;

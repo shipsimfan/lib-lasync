@@ -1,7 +1,9 @@
+use crate::WaitQueue;
+use std::{cell::RefCell, rc::Rc};
 use uring::io_uring_cqe;
 
 /// A handler called when an event signals completion
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum EventHandler {
     /// No data is associated with the event
     Unit(fn(cqe: &mut io_uring_cqe)),
@@ -11,6 +13,12 @@ pub enum EventHandler {
 
     /// An integer is associated with the event
     Integer(usize, fn(cqe: &mut io_uring_cqe, value: &mut usize)),
+
+    /// A [`WaitQueue`] is associated with the event
+    WaitQueue(
+        Rc<RefCell<WaitQueue>>,
+        fn(cqe: &mut io_uring_cqe, wait_queue: &mut WaitQueue),
+    ),
 }
 
 impl EventHandler {
@@ -37,6 +45,14 @@ impl EventHandler {
     /// Creates a new [`EventHandler`] with an associated integer initilized to `value`
     pub fn integer_with_value(handler: fn(&mut io_uring_cqe, &mut usize), value: usize) -> Self {
         EventHandler::Integer(value, handler)
+    }
+
+    /// Creates a new [`EventHandler`] with an associated [`WaitQueue`]
+    pub fn wait_queue(
+        handler: fn(&mut io_uring_cqe, &mut WaitQueue),
+        wait_queue: Rc<RefCell<WaitQueue>>,
+    ) -> Self {
+        EventHandler::WaitQueue(wait_queue, handler)
     }
 
     /// Gets the boolean value associated with the event if there is one
@@ -91,38 +107,12 @@ impl EventHandler {
             EventHandler::Unit(handler) => (handler)(cqe),
             EventHandler::Boolean(value, handler) => (handler)(cqe, value),
             EventHandler::Integer(value, handler) => (handler)(cqe, value),
+            EventHandler::WaitQueue(wait_queue, handler) => {
+                (handler)(cqe, &mut *wait_queue.borrow_mut())
+            }
         }
     }
 }
 
-impl From<fn(&mut io_uring_cqe)> for EventHandler {
-    fn from(handler: fn(&mut io_uring_cqe)) -> Self {
-        EventHandler::Unit(handler)
-    }
-}
-
-impl From<fn(&mut io_uring_cqe, &mut bool)> for EventHandler {
-    fn from(handler: fn(&mut io_uring_cqe, &mut bool)) -> Self {
-        EventHandler::Boolean(false, handler)
-    }
-}
-
-impl From<(fn(&mut io_uring_cqe, &mut bool), bool)> for EventHandler {
-    fn from(value: (fn(&mut io_uring_cqe, &mut bool), bool)) -> Self {
-        let (handler, initial_value) = value;
-        EventHandler::Boolean(initial_value, handler)
-    }
-}
-
-impl From<fn(&mut io_uring_cqe, &mut usize)> for EventHandler {
-    fn from(handler: fn(&mut io_uring_cqe, &mut usize)) -> Self {
-        EventHandler::Integer(0, handler)
-    }
-}
-
-impl From<(fn(&mut io_uring_cqe, &mut usize), usize)> for EventHandler {
-    fn from(value: (fn(&mut io_uring_cqe, &mut usize), usize)) -> Self {
-        let (handler, initial_value) = value;
-        EventHandler::Integer(initial_value, handler)
-    }
-}
+impl !Send for EventHandler {}
+impl !Sync for EventHandler {}

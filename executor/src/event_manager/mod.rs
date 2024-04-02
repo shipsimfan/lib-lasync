@@ -65,3 +65,6 @@ impl Drop for EventManager {
         })
     }
 }
+
+impl !Send for EventManager {}
+impl !Sync for EventManager {}
