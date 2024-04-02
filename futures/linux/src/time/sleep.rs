@@ -37,7 +37,7 @@ fn sleep_callback(_: &mut io_uring_cqe, value: &mut usize) {
 impl Sleep {
     /// Creates a new [`Sleep`] which yields after `duration` has passed
     pub fn new(duration: Duration) -> Result<Self> {
-        let event_id = EventRef::register(EventHandler::new(0, sleep_callback))?;
+        let event_id = EventRef::register(EventHandler::integer(sleep_callback))?;
 
         let timespec = __kernel_timespec {
             sec: duration.as_secs() as _,
@@ -90,7 +90,7 @@ impl Future for Sleep {
 
             // Check if the event is ready
             let event = manager.get_event_mut(event_id).unwrap();
-            if event.get_data().value() > 0 {
+            if event.get_data().as_integer() > 0 {
                 *completed = true;
                 return Poll::Ready(());
             }

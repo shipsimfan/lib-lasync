@@ -36,7 +36,7 @@ fn write_callback(cqe: &mut io_uring_cqe, value: &mut usize) {
 impl<'a, W: AsFD> FDWrite<'a, W> {
     /// Creates a new [`FDWrite`] future
     pub(crate) fn new(source: &'a mut W, buffer: &'a [u8]) -> Self {
-        let event_id = EventRef::register(EventHandler::new(0, write_callback));
+        let event_id = EventRef::register(EventHandler::integer(write_callback));
 
         FDWrite {
             source,
@@ -96,7 +96,7 @@ impl<'a, W: AsFD> Future for FDWrite<'a, W> {
             }
 
             let event = manager.get_event_mut(event_id).unwrap();
-            let value = event.get_data().value();
+            let value = event.get_data().as_integer();
             if value & SIGNAL_BIT == 0 {
                 event.set_waker(Some(cx.waker().clone()));
                 return Poll::Pending;
@@ -112,7 +112,7 @@ impl<'a, W: AsFD> Future for FDWrite<'a, W> {
     }
 }
 
-impl<'a, R: AsFD> Drop for FDWrite<'a, R> {
+impl<'a, W: AsFD> Drop for FDWrite<'a, W> {
     fn drop(&mut self) {
         if let Ok(event_id) = &self.event_id {
             if self.sqe_submitted {
@@ -127,3 +127,6 @@ impl<'a, R: AsFD> Drop for FDWrite<'a, R> {
         }
     }
 }
+
+impl<'a, W: AsFD> !Send for FDWrite<'a, W> {}
+impl<'a, W: AsFD> !Sync for FDWrite<'a, W> {}

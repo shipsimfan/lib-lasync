@@ -42,7 +42,7 @@ fn interval_callback(_: &mut io_uring_cqe, value: &mut usize) {
 impl Interval {
     /// Creates a new [`Interval`] that first yields after `delay` and then yields every `period`
     pub fn new(period: Duration) -> Result<Self> {
-        let event_id = EventRef::register(EventHandler::new(0, interval_callback))?;
+        let event_id = EventRef::register(EventHandler::integer(interval_callback))?;
 
         let timespec = __kernel_timespec {
             sec: period.as_secs() as _,
@@ -122,9 +122,9 @@ impl<'a> Future for Tick<'a> {
 
             // Check if the event is ready
             let event = manager.get_event_mut(*interval.event_id).unwrap();
-            let value = event.get_data().value();
+            let value = event.get_data().as_integer();
             if value > 0 {
-                event.data_mut().set_value(value - 1);
+                event.data_mut().set_integer(value - 1);
                 return Poll::Ready(());
             }
 

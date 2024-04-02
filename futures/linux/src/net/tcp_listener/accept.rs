@@ -41,7 +41,7 @@ fn accept_callback(cqe: &mut io_uring_cqe, value: &mut usize) {
 impl<'a> Accept<'a> {
     /// Creates a new [`Accept`] future
     pub(super) fn new(listener: &'a TCPListener) -> Self {
-        let event_id = EventRef::register(EventHandler::new(0, accept_callback));
+        let event_id = EventRef::register(EventHandler::integer(accept_callback));
 
         let socket_address = SocketAddress::default(listener.0.family());
         let socket_address_len = socket_address.len() as _;
@@ -116,7 +116,7 @@ impl<'a> Future for Accept<'a> {
             }
 
             let event = manager.get_event_mut(event_id).unwrap();
-            let value = event.get_data().value();
+            let value = event.get_data().as_integer();
             if value & SIGNAL_BIT == 0 {
                 event.set_waker(Some(cx.waker().clone()));
                 return Poll::Pending;

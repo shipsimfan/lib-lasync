@@ -36,7 +36,7 @@ fn read_callback(cqe: &mut io_uring_cqe, value: &mut usize) {
 impl<'a, R: AsFD> FDRead<'a, R> {
     /// Creates a new [`FDRead`] future
     pub(crate) fn new(source: &'a mut R, buffer: &'a mut [u8]) -> Self {
-        let event_id = EventRef::register(EventHandler::new(0, read_callback));
+        let event_id = EventRef::register(EventHandler::integer(read_callback));
 
         FDRead {
             source,
@@ -99,7 +99,7 @@ impl<'a, R: AsFD> Future for FDRead<'a, R> {
             }
 
             let event = manager.get_event_mut(event_id).unwrap();
-            let value = event.get_data().value();
+            let value = event.get_data().as_integer();
             if value & SIGNAL_BIT == 0 {
                 event.set_waker(Some(cx.waker().clone()));
                 return Poll::Pending;
@@ -130,3 +130,6 @@ impl<'a, R: AsFD> Drop for FDRead<'a, R> {
         }
     }
 }
+
+impl<'a, R: AsFD> !Send for FDRead<'a, R> {}
+impl<'a, R: AsFD> !Sync for FDRead<'a, R> {}
