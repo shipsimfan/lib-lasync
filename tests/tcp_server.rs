@@ -3,9 +3,8 @@ use std::{
     num::NonZeroUsize,
 };
 
-const PORT: u16 = 8192;
 const SOCKET_ADDRESS: SocketAddr =
-    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), PORT));
+    SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), 0));
 
 const SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(32) };
 
@@ -13,10 +12,11 @@ const DATA: &[u8] = include_bytes!("test_data.txt");
 
 #[test]
 fn tcp_server_accept() {
-    lasync::executor::run(SIZE, async {
-        let tcp_listener = lasync::futures::net::TCPListener::bind(SOCKET_ADDRESS).unwrap();
+    lasync::run(SIZE, async {
+        let tcp_listener = lasync::net::TCPListener::bind(SOCKET_ADDRESS).unwrap();
+        let address = tcp_listener.local_addr().unwrap();
 
-        let child = std::thread::spawn(tcp_server_accept_client);
+        let child = std::thread::spawn(move || tcp_server_accept_client(address));
 
         let (stream, address) = tcp_listener.accept().await.unwrap();
 
@@ -36,8 +36,8 @@ fn tcp_server_accept() {
     .unwrap();
 }
 
-fn tcp_server_accept_client() {
-    let stream = std::net::TcpStream::connect(SOCKET_ADDRESS).unwrap();
+fn tcp_server_accept_client(address: SocketAddr) {
+    let stream = std::net::TcpStream::connect(address).unwrap();
 
     drop(stream);
 }
@@ -46,10 +46,11 @@ fn tcp_server_accept_client() {
 fn tcp_server_read() {
     use futures::io::Read;
 
-    lasync::executor::run(SIZE, async {
-        let tcp_listener = lasync::futures::net::TCPListener::bind(SOCKET_ADDRESS).unwrap();
+    lasync::run(SIZE, async {
+        let tcp_listener = lasync::net::TCPListener::bind(SOCKET_ADDRESS).unwrap();
+        let address = tcp_listener.local_addr().unwrap();
 
-        let child = std::thread::spawn(tcp_server_read_client);
+        let child = std::thread::spawn(move || tcp_server_read_client(address));
 
         let (mut stream, _) = tcp_listener.accept().await.unwrap();
 
@@ -72,10 +73,10 @@ fn tcp_server_read() {
     .unwrap();
 }
 
-fn tcp_server_read_client() {
+fn tcp_server_read_client(address: SocketAddr) {
     use std::io::Write;
 
-    let mut stream = std::net::TcpStream::connect(SOCKET_ADDRESS).unwrap();
+    let mut stream = std::net::TcpStream::connect(address).unwrap();
 
     stream.write_all(DATA).unwrap();
 }
@@ -84,10 +85,11 @@ fn tcp_server_read_client() {
 fn tcp_server_write() {
     use futures::io::Write;
 
-    lasync::executor::run(SIZE, async {
-        let tcp_listener = lasync::futures::net::TCPListener::bind(SOCKET_ADDRESS).unwrap();
+    lasync::run(SIZE, async {
+        let tcp_listener = lasync::net::TCPListener::bind(SOCKET_ADDRESS).unwrap();
+        let address = tcp_listener.local_addr().unwrap();
 
-        let child = std::thread::spawn(tcp_server_write_client);
+        let child = std::thread::spawn(move || tcp_server_write_client(address));
 
         let (mut stream, _) = tcp_listener.accept().await.unwrap();
 
@@ -106,10 +108,10 @@ fn tcp_server_write() {
     .unwrap();
 }
 
-fn tcp_server_write_client() {
+fn tcp_server_write_client(address: SocketAddr) {
     use std::io::Read;
 
-    let mut stream = std::net::TcpStream::connect(SOCKET_ADDRESS).unwrap();
+    let mut stream = std::net::TcpStream::connect(address).unwrap();
 
     let mut buffer = [0; DATA.len()];
     stream.read_exact(&mut buffer).unwrap();
