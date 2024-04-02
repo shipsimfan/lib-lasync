@@ -14,6 +14,3 @@ executor-common.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 executor-linux.path = "linux"
-
-[target.'cfg(target_os = "windows")'.dependencies]
-executor-windows.path = "windows"

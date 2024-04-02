@@ -8,7 +8,6 @@ version = "0.1.0"
 dependencies = [
  "executor-common",
  "executor-linux",
- "executor-windows",
 ]
 
 [[package]]
@@ -25,20 +24,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "executor-windows"
-version = "0.1.0"
-dependencies = [
- "executor-common",
- "win32",
-]
-
-[[package]]
 name = "futures"
 version = "0.1.0"
 dependencies = [
  "futures-common",
  "futures-linux",
- "futures-windows",
 ]
 
 [[package]]
@@ -53,15 +43,6 @@ dependencies = [
  "futures-common",
  "linux",
  "uring",
-]
-
-[[package]]
-name = "futures-windows"
-version = "0.1.0"
-dependencies = [
- "executor",
- "futures-common",
- "win32",
 ]
 
 [[package]]
@@ -84,8 +65,3 @@ source = "git+https://github.com/shipsimfan/lib-uring#0405f4e0a3ec110f1c4fab5936
 dependencies = [
  "linux",
 ]
-
-[[package]]
-name = "win32"
-version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-win32#d4a9825f703973e96666d6994f8321744e0c7d86"

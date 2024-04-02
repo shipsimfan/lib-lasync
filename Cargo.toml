@@ -1,13 +1,7 @@
 [workspace]
 default-members = ["."]
 
-members = [
-    "executor/linux",
-    "executor/windows",
-
-    "futures/linux",
-    "futures/windows",
-]
+members = ["executor/linux", "futures/linux"]
 
 [workspace.package]
 version = "0.1.0"
@@ -27,8 +21,6 @@ futures-common.path = "futures/common"
 
 linux.git = "https://github.com/shipsimfan/lib-linux"
 uring.git = "https://github.com/shipsimfan/lib-uring"
-
-win32.git = "https://github.com/shipsimfan/lib-win32"
 
 
 [package]
