@@ -19,5 +19,33 @@ pub struct Notify {
     tasks: WaitQueue,
 }
 
+impl Notify {
+    // `state` == 0 means not notified
+    // `state` == 1 means notified
+    //
+    // To wait:
+    //  1. Check to see if there are tasks in the queue
+    //    1a. If there are, put yourself in the queue and return Poll::Pending
+    //  2. Compare the state with 1 and exchange it to 0 if it is 1
+    //    2a. If the state was 1, the state is now set to 0 and you took the signal, return
+    //        Poll::Ready.
+    //  3. If it was 0, add yourself to the queue, register the `futex_wait`/notify callback if
+    //     needed, and return Poll::Pending.
+    //
+    // If Poll::Pending was returned, the next poll will happen after the task is woken by the
+    // notify callback. In the second poll:
+    //  1. Atomically store 0 in the state.
+    //  2. Re-register the `futex_wait` (it is no longer in the io_uring as that is what waked this
+    //                                   task)
+    //  3. Return Poll::Ready
+    //
+    // To notify:
+    //  1. Atomically store 1
+    //  2. Call futex_wake
+    //
+    // Callback:
+    //  1. Wake the next task in the queue
+}
+
 unsafe impl Send for Notify {}
 unsafe impl Sync for Notify {}
