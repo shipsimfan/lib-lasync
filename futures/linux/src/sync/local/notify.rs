@@ -1,3 +1,4 @@
+use executor::platform::WaitQueue;
 use std::{
     cell::RefCell,
     future::Future,
@@ -5,7 +6,9 @@ use std::{
     task::{Context, Poll},
 };
 
-use executor::platform::WaitQueue;
+// rustdoc imports
+#[allow(unused_imports)]
+use crate::sync::Notify;
 
 /// A [`Future`] which can be used to signal or be signalled by other tasks
 ///
