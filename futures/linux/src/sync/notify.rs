@@ -1,5 +1,6 @@
 use executor::platform::WaitQueue;
-use std::sync::atomic::AtomicU32;
+use std::{cell::RefCell, rc::Rc, sync::atomic::AtomicU32};
+use uring::io_uring_cqe;
 
 // rustdoc imports
 #[allow(unused_imports)]
@@ -16,7 +17,12 @@ pub struct Notify {
     state: AtomicU32,
 
     /// The tasks to notify
-    tasks: WaitQueue,
+    tasks: Rc<RefCell<WaitQueue>>,
+}
+
+/// Wakes the next task in the [`WaitQueue`]
+fn notify_callback(_: &mut io_uring_cqe, tasks: &mut WaitQueue) {
+    tasks.pop().map(|task| task.wake());
 }
 
 impl Notify {
