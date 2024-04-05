@@ -19,6 +19,6 @@ pub use sqe::SQE;
 pub use wait_queue::WaitQueue;
 
 // The result used for Linux events
-pub use linux::{Error, Result};
+pub use linux::{errno, Error, Result};
 
 use io_uring::IOURing;
