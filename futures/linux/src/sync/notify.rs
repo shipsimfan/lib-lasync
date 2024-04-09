@@ -1,6 +1,10 @@
-use executor::{platform::WaitQueue, Result};
+use crate::event_ref::EventRef;
+use executor::{
+    platform::{EventHandler, WaitQueue},
+    EventID, EventManager, Result,
+};
 use linux::{
-    linux::futex::FUTEX_WAKE,
+    linux::futex::{FUTEX_BITSET_MATCH_ANY, FUTEX_WAKE},
     sys::syscall::{syscall, SYS_futex},
     time::timespec,
     try_linux,
@@ -14,7 +18,7 @@ use std::{
     sync::atomic::{AtomicU32, Ordering},
     task::{Context, Poll},
 };
-use uring::io_uring_cqe;
+use uring::{io_uring_cqe, io_uring_prep_futex_wait};
 
 // rustdoc imports
 #[allow(unused_imports)]
@@ -32,6 +36,9 @@ pub struct Notify {
 
     /// The tasks to notify
     tasks: Rc<RefCell<WaitQueue>>,
+
+    /// The event for registering the futex_wait I/O event
+    event: EventRef,
 }
 
 /// A [`Future`] which yields when signalled by another task
@@ -48,13 +55,30 @@ fn notify_callback(_: &mut io_uring_cqe, tasks: &mut WaitQueue) {
     tasks.pop().map(|task| task.wake());
 }
 
+fn register_notify_event(event: EventID, futex: *mut u32) {
+    EventManager::get_local_mut(|manager| {
+        let sqe = manager.get_sqe(event).unwrap();
+
+        unsafe {
+            io_uring_prep_futex_wait(sqe.as_ptr(), futex, 0, FUTEX_BITSET_MATCH_ANY, 0, 0);
+        }
+
+        sqe.submit().unwrap();
+    });
+}
+
 impl Notify {
     /// Creates a new unsignalled [`Notify`]
-    pub fn new() -> Self {
-        Notify {
+    pub fn new() -> Result<Self> {
+        let tasks = Rc::new(RefCell::new(WaitQueue::new()));
+
+        let event = EventRef::register(EventHandler::WaitQueue(tasks.clone(), notify_callback))?;
+
+        Ok(Notify {
             state: AtomicU32::new(0),
-            tasks: Rc::new(RefCell::new(WaitQueue::new())),
-        }
+            tasks,
+            event,
+        })
     }
 
     /// Notifies the next waiting task
@@ -91,7 +115,7 @@ unsafe impl Send for Notify {}
 unsafe impl Sync for Notify {}
 
 impl<'a> Future for Notified<'a> {
-    type Output = Result<()>;
+    type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         // Is this the second time this poll is called?
@@ -101,10 +125,10 @@ impl<'a> Future for Notified<'a> {
 
             // Check to see if we need to re-register the `futex_wait` I/O event for future tasks
             if self.notify.tasks.borrow().len() > 0 {
-                todo!("register futex_wait I/O event for future tasks");
+                register_notify_event(*self.notify.event, self.notify.state.as_ptr());
             }
 
-            return Poll::Ready(Ok(()));
+            return Poll::Ready(());
         }
 
         // Are there already tasks waiting?
@@ -123,13 +147,13 @@ impl<'a> Future for Notified<'a> {
             .is_ok()
         {
             // We took the signal
-            return Poll::Ready(Ok(()));
+            return Poll::Ready(());
         }
 
+        // Place ourselves in the queue and register the `futex_wait` I/O event
         self.notify.tasks.borrow_mut().push(cx.waker().clone());
+        register_notify_event(*self.notify.event, self.notify.state.as_ptr());
         self.get_mut().registered = true;
-
-        todo!("register futuex_wait");
 
         Poll::Pending
     }
