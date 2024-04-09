@@ -1,5 +1,16 @@
-use executor::platform::WaitQueue;
-use std::{cell::RefCell, rc::Rc, sync::atomic::AtomicU32};
+use executor::{platform::WaitQueue, Result};
+use linux::{
+    linux::futex::FUTEX_WAKE,
+    sys::syscall::{syscall, SYS_futex},
+    time::timespec,
+    try_linux,
+};
+use std::{
+    cell::RefCell,
+    ptr::{null, null_mut},
+    rc::Rc,
+    sync::atomic::{AtomicU32, Ordering},
+};
 use uring::io_uring_cqe;
 
 // rustdoc imports
@@ -51,6 +62,26 @@ impl Notify {
     //
     // Callback:
     //  1. Wake the next task in the queue
+
+    /// Notifies the next task in the queue
+    pub fn notify_one(&self) -> Result<()> {
+        if let Ok(_) = self
+            .state
+            .compare_exchange(0, 1, Ordering::SeqCst, Ordering::Relaxed)
+        {
+            try_linux!(syscall(
+                SYS_futex,
+                self.state.as_ptr(),
+                FUTEX_WAKE,
+                1,
+                null::<timespec>(),
+                null_mut::<u32>(),
+                0
+            ))?;
+        }
+
+        Ok(())
+    }
 }
 
 unsafe impl Send for Notify {}
