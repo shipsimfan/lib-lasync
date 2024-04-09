@@ -7,9 +7,12 @@ use linux::{
 };
 use std::{
     cell::RefCell,
+    future::Future,
+    pin::Pin,
     ptr::{null, null_mut},
     rc::Rc,
     sync::atomic::{AtomicU32, Ordering},
+    task::{Context, Poll},
 };
 use uring::io_uring_cqe;
 
@@ -22,7 +25,7 @@ use crate::sync::LocalNotify;
 /// This can be signalled, but not waited upon, by other threads than the one that created it. If
 /// this only needs to be used in one thread, consider using [`LocalNotify`].
 pub struct Notify {
-    /// Has this been notified
+    /// Has this been notified. 1 indicates notified, 0 indicates not.
     ///
     /// This is used as a futex
     state: AtomicU32,
@@ -31,43 +34,35 @@ pub struct Notify {
     tasks: Rc<RefCell<WaitQueue>>,
 }
 
+/// A [`Future`] which yields when signalled by another task
+pub struct Notified<'a> {
+    /// The [`Notify`] to watch
+    notify: &'a Notify,
+
+    /// Has this [`Future`] been registered with the [`Notify`]?
+    registered: bool,
+}
+
 /// Wakes the next task in the [`WaitQueue`]
 fn notify_callback(_: &mut io_uring_cqe, tasks: &mut WaitQueue) {
     tasks.pop().map(|task| task.wake());
 }
 
 impl Notify {
-    // `state` == 0 means not notified
-    // `state` == 1 means notified
-    //
-    // To wait:
-    //  1. Check to see if there are tasks in the queue
-    //    1a. If there are, put yourself in the queue and return Poll::Pending
-    //  2. Compare the state with 1 and exchange it to 0 if it is 1
-    //    2a. If the state was 1, the state is now set to 0 and you took the signal, return
-    //        Poll::Ready.
-    //  3. If it was 0, add yourself to the queue, register the `futex_wait`/notify callback if
-    //     needed, and return Poll::Pending.
-    //
-    // If Poll::Pending was returned, the next poll will happen after the task is woken by the
-    // notify callback. In the second poll:
-    //  1. Atomically store 0 in the state.
-    //  2. Re-register the `futex_wait` if there are more tasks waiting (it is no longer in the
-    //     io_uring as that is what waked this task)
-    //  3. Return Poll::Ready
-    //
-    // To notify:
-    //  1. Atomically store 1
-    //  2. Call futex_wake
-    //
-    // Callback:
-    //  1. Wake the next task in the queue
+    /// Creates a new unsignalled [`Notify`]
+    pub fn new() -> Self {
+        Notify {
+            state: AtomicU32::new(0),
+            tasks: Rc::new(RefCell::new(WaitQueue::new())),
+        }
+    }
 
-    /// Notifies the next task in the queue
+    /// Notifies the next waiting task
     pub fn notify_one(&self) -> Result<()> {
-        if let Ok(_) = self
+        if self
             .state
             .compare_exchange(0, 1, Ordering::SeqCst, Ordering::Relaxed)
+            .is_ok()
         {
             try_linux!(syscall(
                 SYS_futex,
@@ -82,7 +77,63 @@ impl Notify {
 
         Ok(())
     }
+
+    /// Creates a [`Notified`] [`Future`] which can be `await`ed on to be signalled
+    pub fn notified(&self) -> Notified {
+        Notified {
+            notify: self,
+            registered: false,
+        }
+    }
 }
 
 unsafe impl Send for Notify {}
 unsafe impl Sync for Notify {}
+
+impl<'a> Future for Notified<'a> {
+    type Output = Result<()>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        // Is this the second time this poll is called?
+        if self.registered {
+            // If so, reset the state
+            self.notify.state.store(0, Ordering::SeqCst);
+
+            // Check to see if we need to re-register the `futex_wait` I/O event for future tasks
+            if self.notify.tasks.borrow().len() > 0 {
+                todo!("register futex_wait I/O event for future tasks");
+            }
+
+            return Poll::Ready(Ok(()));
+        }
+
+        // Are there already tasks waiting?
+        if self.notify.tasks.borrow().len() > 0 {
+            // Place ourselves in the queue and wait
+            self.notify.tasks.borrow_mut().push(cx.waker().clone());
+            self.get_mut().registered = true;
+            return Poll::Pending;
+        }
+
+        // Is the state currently signalled? (Nobody is waiting as checked above)
+        if self
+            .notify
+            .state
+            .compare_exchange(1, 0, Ordering::Acquire, Ordering::Relaxed)
+            .is_ok()
+        {
+            // We took the signal
+            return Poll::Ready(Ok(()));
+        }
+
+        self.notify.tasks.borrow_mut().push(cx.waker().clone());
+        self.get_mut().registered = true;
+
+        todo!("register futuex_wait");
+
+        Poll::Pending
+    }
+}
+
+impl<'a> !Send for Notified<'a> {}
+impl<'a> !Sync for Notified<'a> {}
