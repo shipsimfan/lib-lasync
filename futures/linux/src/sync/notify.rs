@@ -41,8 +41,8 @@ impl Notify {
     // If Poll::Pending was returned, the next poll will happen after the task is woken by the
     // notify callback. In the second poll:
     //  1. Atomically store 0 in the state.
-    //  2. Re-register the `futex_wait` (it is no longer in the io_uring as that is what waked this
-    //                                   task)
+    //  2. Re-register the `futex_wait` if there are more tasks waiting (it is no longer in the
+    //     io_uring as that is what waked this task)
     //  3. Return Poll::Ready
     //
     // To notify:
