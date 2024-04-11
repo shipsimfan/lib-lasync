@@ -1,5 +1,6 @@
+use crate::fs::Open;
 use linux::fcntl::{O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_TRUNC, O_WRONLY};
-use std::ffi::c_int;
+use std::{ffi::c_int, path::Path};
 
 /// Options dictating access to a file
 pub struct OpenOptions(c_int);
@@ -8,6 +9,11 @@ impl OpenOptions {
     /// Creates a new [`OpenOptions`] with all options set to false
     pub const fn new() -> Self {
         OpenOptions(0)
+    }
+
+    /// Opens the file at `path` with the options specified in `self`
+    pub fn open<P: AsRef<Path>>(&self, path: P) -> Open {
+        Open::new(path.as_ref(), self.0)
     }
 
     /// Sets the read access for the file
