@@ -13,11 +13,14 @@ use std::{
 pub struct Open {
     /// The path to open
     path: Result<CString>,
+
+    /// The options to open with
+    options: Result<c_int>,
 }
 
 impl Open {
     /// Creates a new [`Open`] [`Future`] to open the file at `path` with `options`
-    pub(super) fn new(path: &Path, options: c_int) -> Self {
+    pub(super) fn new(path: &Path, options: Result<c_int>) -> Self {
         let path =
             CString::new(path.as_os_str().as_encoded_bytes()).map_err(|_| Error::new(EINVAL));
 

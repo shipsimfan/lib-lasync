@@ -1,30 +1,48 @@
 use crate::fs::Open;
-use linux::fcntl::{O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_TRUNC, O_WRONLY};
+use executor::{Error, Result};
+use linux::{
+    errno::EINVAL,
+    fcntl::{O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY},
+};
 use std::{ffi::c_int, path::Path};
 
 /// Options dictating access to a file
-pub struct OpenOptions(c_int);
+pub struct OpenOptions {
+    read: bool,
+    write: bool,
+    append: bool,
+    truncate: bool,
+    create: bool,
+    create_new: bool,
+}
 
 impl OpenOptions {
     /// Creates a new [`OpenOptions`] with all options set to false
     pub const fn new() -> Self {
-        OpenOptions(0)
+        OpenOptions {
+            read: false,
+            write: false,
+            append: false,
+            truncate: false,
+            create: false,
+            create_new: false,
+        }
     }
 
     /// Opens the file at `path` with the options specified in `self`
     pub fn open<P: AsRef<Path>>(&self, path: P) -> Open {
-        Open::new(path.as_ref(), self.0)
+        Open::new(path.as_ref(), self.get_options())
     }
 
     /// Sets the read access for the file
     pub fn read(&mut self, read: bool) -> &mut Self {
-        self.set(O_RDONLY, read);
+        self.read = read;
         self
     }
 
     /// Sets the write access for the file
     pub fn write(&mut self, write: bool) -> &mut Self {
-        self.set(O_WRONLY, write);
+        self.write = write;
         self
     }
 
@@ -32,50 +50,71 @@ impl OpenOptions {
     ///
     /// See [`std::fs::OpenOptions::append`] for more details.
     pub fn append(&mut self, append: bool) -> &mut Self {
-        self.set(O_APPEND, append);
-        if append {
-            self.set_flag(O_WRONLY);
-        }
+        self.append = append;
         self
     }
 
     /// Sets if the file will be truncated to zero length upon opening
     pub fn truncate(&mut self, truncate: bool) -> &mut Self {
-        self.set(O_TRUNC, truncate);
+        self.truncate = truncate;
         self
     }
 
     /// Sets if the file should be created if it does not already exist. If the file already
     /// exists, it will be opened normally.
     pub fn create(&mut self, create: bool) -> &mut Self {
-        self.set(O_CREAT, create);
+        self.create = create;
         self
     }
 
     /// Sets if the file should be created if it does not already exist. If the file already
     /// exists, the open will fail with an error.
     pub fn create_new(&mut self, create_new: bool) -> &mut Self {
-        self.set(O_EXCL, create_new);
-        self.set(O_CREAT, create_new);
+        self.create_new = create_new;
         self
     }
 
-    /// Sets `flag` to `value`
-    fn set(&mut self, flag: c_int, value: bool) {
-        if value {
-            self.set_flag(flag)
-        } else {
-            self.clear_flag(flag)
+    /// Calculates the options [`c_int`] for `self`
+    fn get_options(&self) -> Result<c_int> {
+        let mut options = self.get_access()?;
+
+        if self.append {
+            options |= O_APPEND;
         }
+
+        if self.truncate {
+            options |= O_TRUNC;
+        }
+
+        if self.create_new {
+            if self.create || self.truncate {
+                return Err(Error::new(EINVAL));
+            }
+
+            options |= O_EXCL;
+            options |= O_CREAT;
+        }
+
+        if self.create {
+            options |= O_CREAT;
+        }
+
+        if (self.truncate || self.create || self.create_new) && !(self.write || self.append) {
+            return Err(Error::new(EINVAL));
+        }
+
+        Ok(options)
     }
 
-    /// Sets `flag` in the options
-    fn set_flag(&mut self, flag: c_int) {
-        self.0 |= flag;
-    }
+    /// Gets the access level for the file
+    fn get_access(&self) -> Result<c_int> {
+        let write = self.write || self.append;
 
-    /// Clears `flag` in the options
-    fn clear_flag(&mut self, flag: c_int) {
-        self.0 &= !flag;
+        match (self.read, write) {
+            (false, false) => Err(Error::new(EINVAL)),
+            (true, false) => Ok(O_RDONLY),
+            (false, true) => Ok(O_WRONLY),
+            (true, true) => Ok(O_RDWR),
+        }
     }
 }
