@@ -8,6 +8,7 @@
 #![feature(ip_bits)]
 #![feature(negative_impls)]
 
+pub mod fs;
 pub mod io;
 pub mod net;
 pub mod sync;
