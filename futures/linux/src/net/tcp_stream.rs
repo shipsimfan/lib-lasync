@@ -27,6 +27,16 @@ impl TCPStream {
     pub fn peer_addr(&self) -> Result<SocketAddr> {
         self.0.peer_addr().map(|addr| addr.into())
     }
+
+    /// Gets if Nagle's algorithm is disabled on this socket
+    pub fn nodelay(&self) -> Result<bool> {
+        self.0.nodelay()
+    }
+
+    /// Sets if this socket will use Nagle's algorithm when sending data
+    pub fn set_nodelay(&mut self, nodelay: bool) -> Result<()> {
+        self.0.set_nodelay(nodelay)
+    }
 }
 
 impl AsFD for TCPStream {

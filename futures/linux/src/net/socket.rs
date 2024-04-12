@@ -1,12 +1,15 @@
+use super::socket_address::SocketAddress;
 use executor::Result;
 use linux::{
-    sys::socket::{bind, getpeername, getsockname, listen, socket, socklen_t, SOCK_STREAM},
+    netinet::{r#in::IPPROTO_TCP, tcp::TCP_NODELAY},
+    sys::socket::{
+        bind, getpeername, getsockname, getsockopt, listen, setsockopt, socket, socklen_t,
+        SOCK_STREAM,
+    },
     try_linux,
     unistd::close,
 };
 use std::ffi::c_int;
-
-use super::socket_address::SocketAddress;
 
 /// A Linux socket
 pub(super) struct Socket {
@@ -49,6 +52,19 @@ impl Socket {
         try_linux!(getpeername(self.fd, address.as_mut_ptr(), &mut len)).map(|_| address)
     }
 
+    /// Gets if Nagle's algorithm is disabled on this socket
+    pub(super) fn nodelay(&self) -> Result<bool> {
+        let mut flag: c_int = 0;
+        try_linux!(getsockopt(
+            self.fd,
+            IPPROTO_TCP,
+            TCP_NODELAY,
+            &mut flag as *mut c_int as _,
+            std::mem::size_of::<c_int>() as _
+        ))
+        .map(|_| flag == 1)
+    }
+
     /// Binds this socket to `addr` (IPv4)
     pub(super) fn bind(&mut self, address: &SocketAddress) -> Result<()> {
         try_linux!(bind(self.fd, address.as_ptr(), address.len() as _)).map(|_| ())
@@ -57,6 +73,19 @@ impl Socket {
     /// Sets this socket into a listen state, allowing this socket to accept incoming connections
     pub(super) fn listen(&mut self, backlog: c_int) -> Result<()> {
         try_linux!(listen(self.fd, backlog)).map(|_| ())
+    }
+
+    /// Sets if this socket will use Nagle's algorithm when sending data
+    pub(super) fn set_nodelay(&mut self, nodelay: bool) -> Result<()> {
+        let flag = nodelay as c_int;
+        try_linux!(setsockopt(
+            self.fd,
+            IPPROTO_TCP,
+            TCP_NODELAY,
+            &flag as *const c_int as _,
+            std::mem::size_of::<c_int>() as _
+        ))
+        .map(|_| ())
     }
 
     /// Gets the underlying file descriptor
