@@ -16,6 +16,7 @@ impl TCPListener {
         let socket_address: SocketAddress = addr.into();
 
         let mut socket = Socket::new(socket_address.family())?;
+        socket.set_reuse_addr(true)?;
         socket.bind(&socket_address)?;
         socket.listen(SOMAXCONN)?;
 

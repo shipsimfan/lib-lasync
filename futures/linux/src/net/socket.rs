@@ -4,7 +4,7 @@ use linux::{
     netinet::{r#in::IPPROTO_TCP, tcp::TCP_NODELAY},
     sys::socket::{
         bind, getpeername, getsockname, getsockopt, listen, setsockopt, socket, socklen_t,
-        SOCK_STREAM,
+        SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR,
     },
     try_linux,
     unistd::close,
@@ -82,6 +82,19 @@ impl Socket {
             self.fd,
             IPPROTO_TCP,
             TCP_NODELAY,
+            &flag as *const c_int as _,
+            std::mem::size_of::<c_int>() as _
+        ))
+        .map(|_| ())
+    }
+
+    /// Sets if the address this socket is bound to can be reused
+    pub(super) fn set_reuse_addr(&mut self, reuse_addr: bool) -> Result<()> {
+        let flag = reuse_addr as c_int;
+        try_linux!(setsockopt(
+            self.fd,
+            SOL_SOCKET,
+            SO_REUSEADDR,
             &flag as *const c_int as _,
             std::mem::size_of::<c_int>() as _
         ))
