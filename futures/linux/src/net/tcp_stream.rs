@@ -49,7 +49,7 @@ impl Read for TCPStream {
     fn read<'a>(
         &'a mut self,
         buf: &'a mut [u8],
-    ) -> impl std::future::Future<Output = linux::Result<usize>> + 'a {
+    ) -> impl std::future::Future<Output = Result<usize>> + 'a {
         FDRead::new(self, buf)
     }
 }
@@ -58,7 +58,7 @@ impl Write for TCPStream {
     fn write<'a>(
         &'a mut self,
         buf: &'a [u8],
-    ) -> impl std::future::Future<Output = linux::Result<usize>> + 'a {
+    ) -> impl std::future::Future<Output = Result<usize>> + 'a {
         FDWrite::new(self, buf)
     }
 }

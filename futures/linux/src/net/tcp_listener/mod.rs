@@ -1,6 +1,5 @@
 use super::{Socket, SocketAddress};
-use executor::Result;
-use linux::sys::socket::SOMAXCONN;
+use executor::{platform::linux::sys::socket::SOMAXCONN, Result};
 use std::net::SocketAddr;
 
 mod accept;

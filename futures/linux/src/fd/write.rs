@@ -1,13 +1,17 @@
 use crate::{AsFD, EventRef};
-use executor::{platform::EventHandler, EventID, EventManager, Result};
-use linux::Error;
+use executor::{
+    platform::{
+        uring::{io_uring_cqe, io_uring_prep_cancel64, io_uring_prep_write},
+        EventHandler,
+    },
+    Error, EventID, EventManager, Result,
+};
 use std::{
     ffi::c_int,
     future::Future,
     pin::Pin,
     task::{Context, Poll},
 };
-use uring::{io_uring_cqe, io_uring_prep_cancel64, io_uring_prep_write};
 
 /// A future which yields aftering writing bytes to a [`Write`]
 pub(crate) struct FDWrite<'a, W: AsFD> {

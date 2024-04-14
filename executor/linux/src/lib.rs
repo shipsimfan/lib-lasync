@@ -19,7 +19,10 @@ pub use manager::LocalEventManager;
 pub use sqe::SQE;
 pub use wait_queue::WaitQueue;
 
-// The result used for Linux events
-pub use linux::{errno, Error, Result};
+// Platform re-export
+pub use uring::{
+    self,
+    linux::{self, Error, Result},
+};
 
 use io_uring::IOURing;

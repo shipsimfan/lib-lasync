@@ -1,5 +1,4 @@
-use crate::Result;
-use linux::Error;
+use crate::{Error, Result};
 use std::ptr::null_mut;
 use uring::{
     io_uring, io_uring_cq_ready, io_uring_cqe, io_uring_cqe_seen, io_uring_get_sqe,
@@ -43,7 +42,7 @@ impl IOURing {
     pub(crate) fn submit_sqe(&mut self, sqe: *mut io_uring_sqe) -> Result<()> {
         let result = unsafe { io_uring_submit(&mut self.inner) };
         if result < 0 {
-            Err(linux::Error::new(-result))
+            Err(Error::new(-result))
         } else {
             Ok(())
         }
@@ -53,7 +52,7 @@ impl IOURing {
     pub(crate) fn wait(&mut self, cqe: &mut *mut io_uring_cqe) -> Result<()> {
         let result = unsafe { io_uring_wait_cqe(&mut self.inner, cqe) };
         if result < 0 {
-            Err(linux::Error::new(-result))
+            Err(Error::new(-result))
         } else {
             Ok(())
         }

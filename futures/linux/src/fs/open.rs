@@ -1,6 +1,12 @@
 use crate::{fs::File, EventRef};
-use executor::{platform::EventHandler, Error, EventManager, Result};
-use linux::errno::EINVAL;
+use executor::{
+    platform::{
+        linux::errno::EINVAL,
+        uring::{io_uring_cqe, io_uring_prep_openat},
+        EventHandler,
+    },
+    Error, EventManager, Result,
+};
 use std::{
     ffi::{c_int, CString},
     future::Future,
@@ -8,7 +14,6 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use uring::{io_uring_cqe, io_uring_prep_openat};
 
 /// A [`Future`] which yields when a file open is complete
 pub struct Open {

@@ -1,4 +1,4 @@
-use linux::{
+use executor::platform::linux::{
     netinet::r#in::{in6_addr, in_addr, sockaddr_in, sockaddr_in6},
     sys::socket::{sockaddr, AF_INET, AF_INET6},
 };

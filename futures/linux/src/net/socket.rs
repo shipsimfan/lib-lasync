@@ -1,13 +1,15 @@
 use super::socket_address::SocketAddress;
-use executor::Result;
-use linux::{
-    netinet::{r#in::IPPROTO_TCP, tcp::TCP_NODELAY},
-    sys::socket::{
-        bind, getpeername, getsockname, getsockopt, listen, setsockopt, socket, socklen_t,
-        SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR,
+use executor::{
+    platform::linux::{
+        netinet::{r#in::IPPROTO_TCP, tcp::TCP_NODELAY},
+        sys::socket::{
+            bind, getpeername, getsockname, getsockopt, listen, setsockopt, socket, socklen_t,
+            SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR,
+        },
+        try_linux,
+        unistd::close,
     },
-    try_linux,
-    unistd::close,
+    Result,
 };
 use std::ffi::c_int;
 

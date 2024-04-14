@@ -12,6 +12,3 @@ publish.workspace = true
 [dependencies]
 futures-common.workspace = true
 executor.workspace = true
-
-linux.workspace = true
-uring.workspace = true

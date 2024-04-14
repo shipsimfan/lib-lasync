@@ -12,5 +12,4 @@ publish.workspace = true
 [dependencies]
 executor-common.workspace = true
 
-linux.workspace = true
 uring.workspace = true

@@ -1,4 +1,4 @@
-use crate::{working_directory::WorkingDirectory, EventHandler, IOURing, Result, SQE};
+use crate::{working_directory::WorkingDirectory, Error, EventHandler, IOURing, Result, SQE};
 use executor_common::{Event, EventID, List};
 use std::{ffi::c_int, num::NonZeroUsize, ptr::null_mut};
 use uring::{io_uring_cqe_get_data64, io_uring_sqe_set_data64};
@@ -71,7 +71,7 @@ impl LocalEventManager {
         let sqe = self
             .io_uring
             .get_sqe()
-            .ok_or(linux::Error::new(linux::errno::ENOSPC))?;
+            .ok_or(Error::new(uring::linux::errno::ENOSPC))?;
 
         unsafe { io_uring_sqe_set_data64(sqe, event_id.into_u64()) };
 

@@ -19,7 +19,6 @@ name = "executor-linux"
 version = "0.1.0"
 dependencies = [
  "executor-common",
- "linux",
  "uring",
 ]
 
@@ -41,8 +40,6 @@ version = "0.1.0"
 dependencies = [
  "executor",
  "futures-common",
- "linux",
- "uring",
 ]
 
 [[package]]
@@ -56,12 +53,12 @@ dependencies = [
 [[package]]
 name = "linux"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-linux#12e98dd7f744b8f41a17af9d84649e56eaaa0d27"
+source = "git+https://github.com/shipsimfan/lib-linux#5f8fe1c7d2f75a1fc6f2a361898b665f83764a89"
 
 [[package]]
 name = "uring"
 version = "0.1.0"
-source = "git+https://github.com/shipsimfan/lib-uring#d438ff02f6666c48f720c3b5b9c99ad322fd1f7e"
+source = "git+https://github.com/shipsimfan/lib-uring#eeabcd3f03f0e14df168f031310a8385c8d42b30"
 dependencies = [
  "linux",
 ]

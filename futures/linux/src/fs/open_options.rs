@@ -1,8 +1,10 @@
 use crate::fs::Open;
-use executor::{Error, Result};
-use linux::{
-    errno::EINVAL,
-    fcntl::{O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY},
+use executor::{
+    platform::linux::{
+        errno::EINVAL,
+        fcntl::{O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY},
+    },
+    Error, Result,
 };
 use std::{ffi::c_int, path::Path};
 

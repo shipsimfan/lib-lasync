@@ -1,13 +1,18 @@
 use crate::EventRef;
-use executor::{platform::EventHandler, EventID, EventManager, Result};
-use linux::time::__kernel_timespec;
+use executor::{
+    platform::{
+        linux::time::__kernel_timespec,
+        uring::{io_uring_cqe, io_uring_prep_timeout, io_uring_prep_timeout_remove},
+        EventHandler,
+    },
+    EventID, EventManager, Result,
+};
 use std::{
     future::Future,
     pin::Pin,
     task::{Context, Poll},
     time::Duration,
 };
-use uring::{io_uring_cqe, io_uring_prep_timeout, io_uring_prep_timeout_remove};
 
 /// A future which yields after a certain duration
 pub struct Sleep {

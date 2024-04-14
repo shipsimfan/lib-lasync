@@ -1,13 +1,17 @@
 use crate::{AsFD, EventRef};
-use executor::{platform::EventHandler, EventID, EventManager, Result};
-use linux::Error;
+use executor::{
+    platform::{
+        uring::{io_uring_cqe, io_uring_prep_cancel64, io_uring_prep_read},
+        EventHandler,
+    },
+    Error, EventID, EventManager, Result,
+};
 use std::{
     ffi::c_int,
     future::Future,
     pin::Pin,
     task::{Context, Poll},
 };
-use uring::{io_uring_cqe, io_uring_prep_cancel64, io_uring_prep_read};
 
 /// A future which yields aftering reading bytes from a [`Read`]
 pub(crate) struct FDRead<'a, R: AsFD> {

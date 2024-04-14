@@ -1,7 +1,13 @@
 use super::{SocketAddress, TCPListener};
 use crate::{net::TCPStream, EventRef};
-use executor::{platform::EventHandler, EventID, EventManager, Result};
-use linux::{sys::socket::socklen_t, Error};
+use executor::{
+    platform::{
+        linux::sys::socket::socklen_t,
+        uring::{io_uring_cqe, io_uring_prep_accept, io_uring_prep_cancel64},
+        EventHandler,
+    },
+    Error, EventID, EventManager, Result,
+};
 use std::{
     ffi::c_int,
     future::Future,
@@ -9,7 +15,6 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use uring::{io_uring_cqe, io_uring_prep_accept, io_uring_prep_cancel64};
 
 /// A future which yields a new connection from a [`TCPListener`]
 pub struct Accept<'a> {

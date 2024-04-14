@@ -19,7 +19,6 @@ executor-common.path = "executor/common"
 futures.path = "futures"
 futures-common.path = "futures/common"
 
-linux.git = "https://github.com/shipsimfan/lib-linux"
 uring.git = "https://github.com/shipsimfan/lib-uring"
 
 

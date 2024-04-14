@@ -1,13 +1,16 @@
 use crate::event_ref::EventRef;
 use executor::{
-    platform::{EventHandler, WaitQueue},
+    platform::{
+        linux::{
+            linux::futex::{FUTEX_BITSET_MATCH_ANY, FUTEX_WAKE},
+            sys::syscall::{syscall, SYS_futex},
+            time::timespec,
+            try_linux,
+        },
+        uring::{io_uring_cqe, io_uring_prep_futex_wait},
+        EventHandler, WaitQueue,
+    },
     EventID, EventManager, Result,
-};
-use linux::{
-    linux::futex::{FUTEX_BITSET_MATCH_ANY, FUTEX_WAKE},
-    sys::syscall::{syscall, SYS_futex},
-    time::timespec,
-    try_linux,
 };
 use std::{
     cell::RefCell,
@@ -18,7 +21,6 @@ use std::{
     sync::atomic::{AtomicU32, Ordering},
     task::{Context, Poll},
 };
-use uring::{io_uring_cqe, io_uring_prep_futex_wait};
 
 // rustdoc imports
 #[allow(unused_imports)]

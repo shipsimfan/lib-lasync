@@ -1,12 +1,12 @@
 use crate::{Error, Result};
-use linux::{
+use std::{ffi::c_int, ptr::null_mut};
+use uring::linux::{
     fcntl::O_RDONLY,
     stdlib::free,
     sys::stat::open,
     try_linux,
     unistd::{close, getcwd},
 };
-use std::{ffi::c_int, ptr::null_mut};
 
 /// A descriptor to the current working directory
 pub(crate) struct WorkingDirectory(c_int);
