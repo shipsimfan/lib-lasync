@@ -1,7 +1,6 @@
 use crate::{fs::File, EventRef};
 use executor::{
     platform::{
-        linux::errno::EINVAL,
         uring::{io_uring_cqe, io_uring_prep_openat},
         EventHandler,
     },
@@ -42,8 +41,7 @@ fn open_callback(cqe: &mut io_uring_cqe, value: &mut usize) {
 impl Open {
     /// Creates a new [`Open`] [`Future`] to open the file at `path` with `options`
     pub(super) fn new(path: &Path, options: Result<c_int>) -> Self {
-        let path =
-            CString::new(path.as_os_str().as_encoded_bytes()).map_err(|_| Error::new(EINVAL));
+        let path = CString::new(path.as_os_str().as_encoded_bytes()).map_err(|_| Error::EINVAL);
 
         let event_id = EventRef::register(EventHandler::integer(open_callback));
 

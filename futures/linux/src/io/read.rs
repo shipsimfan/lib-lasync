@@ -1,4 +1,4 @@
-use executor::{platform::linux::errno::ECONNRESET, Error, Result};
+use executor::{Error, Result};
 use std::future::Future;
 
 /// Asynchronous equivalent of [`std::io::Read`]
@@ -24,7 +24,7 @@ pub trait Read {
                 Ok(())
             } else {
                 // TODO: Find a better error for this, or create a custom one
-                Err(Error::new(ECONNRESET))
+                Err(Error::ECONNRESET)
             }
         }
     }

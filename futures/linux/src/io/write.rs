@@ -1,4 +1,4 @@
-use executor::{platform::linux::errno::ECONNRESET, Error, Result};
+use executor::{Error, Result};
 use std::future::Future;
 
 /// Asynchronous equivalent of [`std::io::Write`]
@@ -11,7 +11,7 @@ pub trait Write {
         async move {
             while !buf.is_empty() {
                 match self.write(buf).await {
-                    Ok(0) => return Err(Error::new(ECONNRESET)),
+                    Ok(0) => return Err(Error::ECONNRESET),
                     Ok(n) => buf = &buf[n..],
                     Err(error) => return Err(error),
                 }

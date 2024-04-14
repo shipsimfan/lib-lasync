@@ -1,9 +1,6 @@
 use crate::fs::Open;
 use executor::{
-    platform::linux::{
-        errno::EINVAL,
-        fcntl::{O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY},
-    },
+    platform::linux::fcntl::{O_APPEND, O_CREAT, O_EXCL, O_RDONLY, O_RDWR, O_TRUNC, O_WRONLY},
     Error, Result,
 };
 use std::{ffi::c_int, path::Path};
@@ -90,7 +87,7 @@ impl OpenOptions {
 
         if self.create_new {
             if self.create || self.truncate {
-                return Err(Error::new(EINVAL));
+                return Err(Error::EINVAL);
             }
 
             options |= O_EXCL;
@@ -102,7 +99,7 @@ impl OpenOptions {
         }
 
         if (self.truncate || self.create || self.create_new) && !(self.write || self.append) {
-            return Err(Error::new(EINVAL));
+            return Err(Error::EINVAL);
         }
 
         Ok(options)
@@ -113,7 +110,7 @@ impl OpenOptions {
         let write = self.write || self.append;
 
         match (self.read, write) {
-            (false, false) => Err(Error::new(EINVAL)),
+            (false, false) => Err(Error::EINVAL),
             (true, false) => Ok(O_RDONLY),
             (false, true) => Ok(O_WRONLY),
             (true, true) => Ok(O_RDWR),

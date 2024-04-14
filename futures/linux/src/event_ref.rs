@@ -1,7 +1,4 @@
-use executor::{
-    platform::{linux::errno::ENOSPC, EventHandler},
-    Error, EventID, EventManager, Result,
-};
+use executor::{platform::EventHandler, Error, EventID, EventManager, Result};
 use std::ops::Deref;
 
 /// A container for an [`EventID`] which deregisters on drop
@@ -12,7 +9,7 @@ impl EventRef {
     pub(crate) fn register(handler: EventHandler) -> Result<Self> {
         EventManager::get_local_mut(|manager| manager.register(handler))
             .map(|event_id| EventRef(event_id))
-            .ok_or(Error::new(ENOSPC))
+            .ok_or(Error::ENOSPC)
     }
 }
 

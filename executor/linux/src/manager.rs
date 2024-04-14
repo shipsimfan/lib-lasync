@@ -68,10 +68,7 @@ impl LocalEventManager {
 
     /// Gets an [`SQE`] for I/O submission
     pub fn get_sqe(&mut self, event_id: EventID) -> Result<SQE> {
-        let sqe = self
-            .io_uring
-            .get_sqe()
-            .ok_or(Error::new(uring::linux::errno::ENOSPC))?;
+        let sqe = self.io_uring.get_sqe().ok_or(Error::ENOSPC)?;
 
         unsafe { io_uring_sqe_set_data64(sqe, event_id.into_u64()) };
 
