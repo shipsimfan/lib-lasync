@@ -1,6 +1,7 @@
 use crate::{fs::File, EventRef};
 use executor::{
     platform::{
+        linux::fcntl::AT_FDCWD,
         uring::{io_uring_cqe, io_uring_prep_openat},
         EventHandler,
     },
@@ -66,11 +67,6 @@ impl Future for Open {
         EventManager::get_local_mut(|manager| {
             // Submit the SQE if one hasn't been submitted yet
             if !self.sqe_submitted {
-                let dfd = match unsafe { manager.working_directory() } {
-                    Ok(dfd) => dfd,
-                    Err(error) => return Poll::Ready(Err(error)),
-                };
-
                 let path = match self.path.as_ref() {
                     Ok(path) => path.as_ptr(),
                     Err(error) => return Poll::Ready(Err(*error)),
@@ -83,7 +79,7 @@ impl Future for Open {
 
                 let sqe = manager.get_sqe(event_id).unwrap();
 
-                unsafe { io_uring_prep_openat(sqe.as_ptr(), dfd, path, options, 0o777) };
+                unsafe { io_uring_prep_openat(sqe.as_ptr(), AT_FDCWD, path, options, 0o777) };
 
                 sqe.submit().unwrap();
                 self.sqe_submitted = true;

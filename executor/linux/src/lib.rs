@@ -12,7 +12,6 @@ mod io_uring;
 mod manager;
 mod sqe;
 mod wait_queue;
-mod working_directory;
 
 pub use event_handler::EventHandler;
 pub use manager::LocalEventManager;

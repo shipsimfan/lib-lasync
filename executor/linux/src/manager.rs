@@ -1,6 +1,6 @@
-use crate::{working_directory::WorkingDirectory, Error, EventHandler, IOURing, Result, SQE};
+use crate::{Error, EventHandler, IOURing, Result, SQE};
 use executor_common::{Event, EventID, List};
-use std::{ffi::c_int, num::NonZeroUsize, ptr::null_mut};
+use std::{num::NonZeroUsize, ptr::null_mut};
 use uring::{io_uring_cqe_get_data64, io_uring_sqe_set_data64};
 
 /// The manager of events on a thread
@@ -10,12 +10,6 @@ pub struct LocalEventManager {
 
     /// The communication for I/O with the kernel
     io_uring: IOURing,
-
-    /// The working directory from when this started
-    ///
-    /// The result is stored so that if an error occurs while opening the directory, it only
-    /// affects programs that actually use file I/O
-    working_directory: Result<WorkingDirectory>,
 }
 
 impl LocalEventManager {
@@ -30,30 +24,12 @@ impl LocalEventManager {
 
         let io_uring = IOURing::new((size.get() / 2) as _)?;
 
-        let working_directory = WorkingDirectory::open();
-
-        Ok(LocalEventManager {
-            events,
-            io_uring,
-            working_directory,
-        })
+        Ok(LocalEventManager { events, io_uring })
     }
 
     /// Gets the number of outstanding events
     pub fn len(&self) -> usize {
         self.events.len()
-    }
-
-    /// Gets the file descriptor for the current working directory
-    ///
-    /// # Safety
-    /// The caller must not close the descriptor and must use it appropriately for a directory
-    /// descriptor.
-    pub unsafe fn working_directory(&self) -> Result<c_int> {
-        self.working_directory
-            .as_ref()
-            .map(|working_directory| working_directory.inner())
-            .map_err(|error| *error)
     }
 
     /// Mutably gets an event
