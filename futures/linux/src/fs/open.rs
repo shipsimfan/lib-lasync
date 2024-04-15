@@ -2,7 +2,7 @@ use crate::{fs::File, EventRef};
 use executor::{
     platform::{
         linux::fcntl::AT_FDCWD,
-        uring::{io_uring_cqe, io_uring_prep_openat},
+        uring::{io_uring_cqe, io_uring_prep_cancel64, io_uring_prep_openat},
         EventHandler,
     },
     Error, EventManager, Result,
@@ -92,6 +92,8 @@ impl Future for Open {
                 return Poll::Pending;
             }
 
+            self.sqe_submitted = false;
+
             let result = (value & (u32::MAX as usize)) as c_int;
             if result < 0 {
                 return Poll::Ready(Err(Error::new(-result)));
@@ -99,5 +101,21 @@ impl Future for Open {
 
             Poll::Ready(Ok(File::new(result)))
         })
+    }
+}
+
+impl Drop for Open {
+    fn drop(&mut self) {
+        if let Ok(event_id) = &self.event_id {
+            if self.sqe_submitted {
+                EventManager::get_local_mut(|manager| {
+                    let sqe = manager.get_sqe(**event_id).unwrap();
+
+                    unsafe { io_uring_prep_cancel64(sqe.as_ptr(), (**event_id).into_u64(), 0) };
+
+                    sqe.submit().unwrap();
+                })
+            }
+        }
     }
 }

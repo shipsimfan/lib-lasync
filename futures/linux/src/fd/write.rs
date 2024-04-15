@@ -106,6 +106,8 @@ impl<'a, W: AsFD> Future for FDWrite<'a, W> {
                 return Poll::Pending;
             }
 
+            *sqe_submitted = false;
+
             let bytes_written = (value & (u32::MAX as usize)) as c_int;
             if bytes_written < 0 {
                 return Poll::Ready(Err(Error::new(-bytes_written)));

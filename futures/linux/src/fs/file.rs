@@ -1,10 +1,10 @@
-use executor::{platform::linux::unistd::close, Result};
-use std::ffi::c_int;
-
 use crate::{
     fd::{AsFD, FDRead, FDWrite},
+    fs::{FileStat, Open, OpenOptions},
     io::{Read, Write},
 };
+use executor::{platform::linux::unistd::close, Result};
+use std::{ffi::c_int, path::Path};
 
 /// An open file on the filesystem
 pub struct File(c_int);
@@ -13,6 +13,40 @@ impl File {
     /// Creates a new [`File`] for `fd`
     pub(super) fn new(fd: c_int) -> Self {
         File(fd)
+    }
+
+    /// Creates a [`File`] at `path` and opens it with write permissions
+    pub fn create<P: AsRef<Path>>(path: P) -> Open {
+        OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+    }
+
+    /// Creates a new [`File`] at `path` and opens it with read and write permissions. This
+    /// function fails if the file exists already.
+    pub fn create_new<P: AsRef<Path>>(path: P) -> Open {
+        OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(path)
+    }
+
+    /// Opens the [`File`] at `path` with read permissions
+    pub fn open<P: AsRef<Path>>(path: P) -> Open {
+        OpenOptions::new().read(true).open(path)
+    }
+
+    /// Returns a new [`OpenOptions`] object for opening [`File`]s
+    pub fn options() -> OpenOptions {
+        OpenOptions::new()
+    }
+
+    /// Returns a [`Future`] which gets the metadata about a file
+    pub fn metadata(&self) -> FileStat {
+        FileStat::new(self)
     }
 }
 

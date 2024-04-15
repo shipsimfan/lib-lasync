@@ -1,7 +1,15 @@
-use crate::{AsFD, EventRef};
+use crate::{
+    event_ref::EventRef,
+    fd::AsFD,
+    fs::{File, Metadata},
+};
 use executor::{
     platform::{
-        uring::{io_uring_cqe, io_uring_prep_cancel64, io_uring_prep_read},
+        linux::{
+            fcntl::{AT_EMPTY_PATH, AT_NO_AUTOMOUNT},
+            sys::stat::{Statx, STATX_BASIC_STATS},
+        },
+        uring::{io_uring_cqe, io_uring_prep_cancel64, io_uring_prep_statx},
         EventHandler,
     },
     Error, EventID, EventManager, Result,
@@ -13,54 +21,58 @@ use std::{
     task::{Context, Poll},
 };
 
-/// A future which yields aftering reading bytes from a [`Read`]
-pub(crate) struct FDRead<'a, R: AsFD> {
-    /// The source to read from
-    source: &'a mut R,
+// rustdoc imports
+#[allow(unused_imports)]
+use executor::platform::linux::sys::stat::statx;
+
+/// A [`Future`] which yields the [`Metadata`] for an open [`File`]
+pub struct FileStat<'a> {
+    /// The [`File`] to get [`Metadata`] for
+    file: &'a File,
+
+    /// The buffer for the output of the [`statx`] call
+    buffer: Statx,
 
     /// The event ID this is registered under
     event_id: Result<EventRef>,
-
-    /// The buffer to read into
-    buffer: &'a mut [u8],
 
     /// Has the SQE been submitted?
     sqe_submitted: bool,
 }
 
 /// The bit used to signal completion of the event in the value. 1 means finished. The bit must be
-/// in a position greater than 32 to fit the result code from the read.
+/// in a position greater than 32 to fit the result code from [`statx`].
 const SIGNAL_BIT: usize = 1 << 33;
 
-/// The callback for when a read is completed
-fn read_callback(cqe: &mut io_uring_cqe, value: &mut usize) {
+/// The callback for when a stat is completed
+fn stat_callback(cqe: &mut io_uring_cqe, value: &mut usize) {
     *value = (cqe.res as usize) | SIGNAL_BIT;
 }
 
-impl<'a, R: AsFD> FDRead<'a, R> {
-    /// Creates a new [`FDRead`] future
-    pub(crate) fn new(source: &'a mut R, buffer: &'a mut [u8]) -> Self {
-        let event_id = EventRef::register(EventHandler::integer(read_callback));
+impl<'a> FileStat<'a> {
+    /// Creates a new [`FileStat`] [`Future`]
+    pub(super) fn new(file: &'a File) -> Self {
+        let event_id = EventRef::register(EventHandler::integer(stat_callback));
 
-        FDRead {
-            source,
+        FileStat {
+            file,
+            buffer: Statx::default(),
             event_id,
-            buffer,
             sqe_submitted: false,
         }
     }
 
-    /// Projects pinned self into `(self.source, self.event_id, self.buffer, self.sqe_submitted)`
+    /// Projects pinned self into `(self.file, self.event_id, self.buffer, self.sqe_submitted)`
     ///
     /// # SAFTEY
     /// This is the only way to access the contained `buffer`, do not access it directly.
     unsafe fn project(
         self: Pin<&mut Self>,
-    ) -> (&mut R, Result<EventID>, Pin<&mut [u8]>, &mut bool) {
+    ) -> (&File, Result<EventID>, Pin<&mut Statx>, &mut bool) {
         let this = self.get_unchecked_mut();
 
         (
-            this.source,
+            this.file,
             this.event_id
                 .as_ref()
                 .map(|event_id| **event_id)
@@ -71,11 +83,11 @@ impl<'a, R: AsFD> FDRead<'a, R> {
     }
 }
 
-impl<'a, R: AsFD> Future for FDRead<'a, R> {
-    type Output = Result<usize>;
+impl<'a> Future for FileStat<'a> {
+    type Output = Result<Metadata>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let (source, event_id, buffer, sqe_submitted) = unsafe { self.project() };
+        let (file, event_id, buffer, sqe_submitted) = unsafe { self.project() };
 
         let event_id = match event_id {
             Ok(event_id) => event_id,
@@ -83,20 +95,22 @@ impl<'a, R: AsFD> Future for FDRead<'a, R> {
         };
 
         EventManager::get_local_mut(|manager| {
+            let buffer = buffer.get_mut();
+
             // Submit the SQE if one hasn't been submitted yet
             if !*sqe_submitted {
                 let sqe = manager.get_sqe(event_id).unwrap();
-                let length = buffer.len();
 
                 unsafe {
-                    io_uring_prep_read(
+                    io_uring_prep_statx(
                         sqe.as_ptr(),
-                        source.fd(),
-                        buffer.get_mut().as_mut_ptr() as _,
-                        length as _,
-                        u64::MAX,
+                        file.fd(),
+                        b"\0".as_ptr().cast(),
+                        AT_EMPTY_PATH | AT_NO_AUTOMOUNT,
+                        STATX_BASIC_STATS as _,
+                        buffer,
                     )
-                };
+                }
 
                 sqe.submit().unwrap();
                 *sqe_submitted = true;
@@ -111,17 +125,17 @@ impl<'a, R: AsFD> Future for FDRead<'a, R> {
 
             *sqe_submitted = false;
 
-            let bytes_read = (value & (u32::MAX as usize)) as c_int;
-            if bytes_read < 0 {
-                return Poll::Ready(Err(Error::new(-bytes_read)));
+            let result = (value & (u32::MAX as usize)) as c_int;
+            if result < 0 {
+                return Poll::Ready(Err(Error::new(-result)));
             }
 
-            Poll::Ready(Ok(bytes_read as usize))
+            Poll::Ready(Ok(Metadata::new(buffer)))
         })
     }
 }
 
-impl<'a, R: AsFD> Drop for FDRead<'a, R> {
+impl<'a> Drop for FileStat<'a> {
     fn drop(&mut self) {
         if let Ok(event_id) = &self.event_id {
             if self.sqe_submitted {
@@ -136,6 +150,3 @@ impl<'a, R: AsFD> Drop for FDRead<'a, R> {
         }
     }
 }
-
-impl<'a, R: AsFD> !Send for FDRead<'a, R> {}
-impl<'a, R: AsFD> !Sync for FDRead<'a, R> {}

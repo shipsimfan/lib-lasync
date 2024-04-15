@@ -127,6 +127,8 @@ impl<'a> Future for Accept<'a> {
                 return Poll::Pending;
             }
 
+            *sqe_submitted = false;
+
             let fd = (value & (u32::MAX as usize)) as c_int;
             if fd < 0 {
                 return Poll::Ready(Err(Error::new(-fd)));
