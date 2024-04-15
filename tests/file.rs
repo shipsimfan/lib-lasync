@@ -20,3 +20,15 @@ fn file_read() {
     })
     .unwrap();
 }
+
+#[test]
+fn file_read_full() {
+    lasync::run(SIZE, async {
+        let buffer = lasync::fs::read(READ_PATH).await.unwrap();
+
+        assert_eq!(buffer, TEST_CONTENT);
+
+        println!("{}", String::from_utf8_lossy(&buffer));
+    })
+    .unwrap();
+}
