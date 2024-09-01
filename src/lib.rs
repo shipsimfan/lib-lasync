@@ -15,8 +15,11 @@
 #![deny(rustdoc::redundant_explicit_links)]
 #![warn(rustdoc::broken_intra_doc_links)]
 
+mod iterator;
+
 pub use executor::*;
 pub use futures::*;
+pub use iterator::{Iterator, SyncIter};
 
 // rustdoc imports
 #[allow(unused_imports)]
